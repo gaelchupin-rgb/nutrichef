@@ -12,7 +12,7 @@ Ce projet contient une application Next.js située dans `Nutrishop/nutrishop-v2`
    ```bash
    npm install
    ```
-3. Configurer les variables d'environnement dans un fichier `.env` :
+3. (Optionnel) Configurer les variables d'environnement dans un fichier `.env` :
    - `DATABASE_URL`
    - `GOOGLE_API_KEY`
    - `GEMINI_MODEL`
@@ -39,3 +39,7 @@ Exécuter les tests unitaires:
 ```bash
 npm test
 ```
+
+Le script de test définit automatiquement des valeurs fictives pour `DATABASE_URL`, `GOOGLE_API_KEY` et `GEMINI_MODEL`.
+
+> **Prérequis** : Node.js 20 ou supérieur est recommandé pour l'exécution des tests.
