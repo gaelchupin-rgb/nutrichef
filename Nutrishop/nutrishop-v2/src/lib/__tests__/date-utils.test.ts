@@ -15,3 +15,9 @@ test('isValidDateRange validates format', () => {
   assert.ok(!isValidDateRange('2024-13-01', '2024-01-01'))
   assert.ok(!isValidDateRange('2024-01-01', '2024-1-02'))
 })
+
+test('rejects impossible dates', () => {
+  assert.ok(!hasValidMealDates([{ date: '2024-02-30' }]))
+  assert.ok(!hasValidMealDates([{ date: '2024-13-01' }]))
+  assert.ok(!isValidDateRange('2024-02-30', '2024-03-01'))
+})

@@ -25,6 +25,37 @@ test('handles unique constraint conflicts', async () => {
   assert.equal(res.status, 400)
 })
 
+test('normalizes email casing before persistence', async () => {
+  const { POST } = await import('../../app/api/auth/register/route')
+  let findArgs: any
+  let createArgs: any
+  ;(prisma.user as any).findFirst = async (args: any) => {
+    findArgs = args
+    return null
+  }
+  ;(prisma as any).$transaction = async (cb: any) => {
+    return cb({
+      user: {
+        create: async (args: any) => {
+          createArgs = args
+          return { id: 1 }
+        }
+      },
+      profile: { create: async () => {} }
+    })
+  }
+  ;(bcrypt as any).hash = async () => 'hashed'
+
+  const req = new NextRequest('http://test', {
+    method: 'POST',
+    body: JSON.stringify({ email: 'TeSt@Example.COM', username: 'user', password: 'secret1' }),
+    headers: { 'content-type': 'application/json' }
+  })
+  await POST(req)
+  assert.equal(findArgs.where.OR[0].email, 'test@example.com')
+  assert.equal(createArgs.data.email, 'test@example.com')
+})
+
 test('authorize returns null if password hash comparison fails', async () => {
   const { authOptions } = await import('../auth')
   ;(prisma.user as any).findUnique = async () => ({ id: '1', email: 'a@a.com', username: 'user', password: 'bad' })

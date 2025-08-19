@@ -1,6 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { generateCombinations, generateRecommendations, filterOutliers } from '../optimizer'
+import {
+  generateCombinations,
+  generateRecommendations,
+  filterOutliers,
+  normalizeToBaseUnit,
+  namesMatch,
+} from '../optimizer'
 
 test('generateCombinations returns all combinations', () => {
   const results: string[][] = []
@@ -53,4 +59,23 @@ test('filterOutliers keeps free offers', () => {
   ]
   const res = filterOutliers(offers)
   assert.ok(res.some((o) => o.price === 0))
+})
+
+test('normalizeToBaseUnit converts imperial and litre units', () => {
+  const lb = normalizeToBaseUnit(1, 'lb')!
+  assert.equal(lb.baseUnit, 'g')
+  assert.ok(Math.abs(lb.value - 453.592) < 0.001)
+
+  const oz = normalizeToBaseUnit(1, 'OZ')!
+  assert.equal(oz.baseUnit, 'g')
+  assert.ok(Math.abs(oz.value - 28.3495) < 0.001)
+
+  const litre = normalizeToBaseUnit(2, 'Litres')!
+  assert.equal(litre.baseUnit, 'ml')
+  assert.equal(litre.value, 2000)
+})
+
+test('namesMatch handles token order and minor differences', () => {
+  assert.ok(namesMatch('tomato sauce', 'sauce tomate'))
+  assert.ok(!namesMatch('tomato sauce', 'apple'))
 })

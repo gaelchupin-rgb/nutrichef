@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Données d\'inscription invalides' }, { status: 400 })
     }
 
-    const { email, username, password } = parsed.data
+    const email = parsed.data.email.toLowerCase()
+    const { username, password } = parsed.data
 
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({

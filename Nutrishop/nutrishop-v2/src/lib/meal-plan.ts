@@ -2,6 +2,10 @@ import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
+export interface MealPlanProfile {
+  cuisineType?: string
+}
+
 export const sessionFetcher = { get: getServerSession }
 
 export const mealPlanSchema = z.object({
@@ -71,7 +75,7 @@ export async function saveMealPlan(
       }>
     }>
   },
-  profile: any,
+  profile: MealPlanProfile,
   userId: string,
   startDate: string,
   endDate: string
@@ -85,47 +89,45 @@ export async function saveMealPlan(
       },
     })
 
-    const tasks: Promise<unknown>[] = []
     for (const day of validMealPlan.days) {
       for (const meal of day.meals) {
-        const task = tx.recipe
-          .upsert({
-            where: { userId_name: { userId, name: meal.name } },
-            update: {},
-            create: {
-              userId,
-              name: meal.name,
-              description: meal.description,
-              instructions: Array.isArray(meal.instructions) ? meal.instructions.join('\n') : '',
-              prepTime: meal.prepTime,
-              cookTime: meal.cookTime,
-              servings: meal.servings,
-              difficulty: meal.difficulty,
-              kcal: meal.nutrition.kcal,
-              protein: meal.nutrition.protein,
-              carbs: meal.nutrition.carbs,
-              fat: meal.nutrition.fat,
-              fiber: meal.nutrition.fiber,
-              sugar: meal.nutrition.sugar,
-              sodium: meal.nutrition.sodium,
-              tags: [profile.cuisineType || 'classique'],
-              category: meal.type,
-            },
-          })
-          .then((recipe) =>
-            tx.menuItem.create({
-              data: {
-                planId: plan.id,
-                date: new Date(day.date),
-                mealType: meal.type,
-                recipeId: recipe.id,
-              },
-            })
-          )
-        tasks.push(task)
+        const recipe = await tx.recipe.upsert({
+          where: { userId_name: { userId, name: meal.name } },
+          update: {},
+          create: {
+            userId,
+            name: meal.name,
+            description: meal.description,
+            instructions: Array.isArray(meal.instructions)
+              ? meal.instructions.join('\n')
+              : '',
+            prepTime: meal.prepTime,
+            cookTime: meal.cookTime,
+            servings: meal.servings,
+            difficulty: meal.difficulty,
+            kcal: meal.nutrition.kcal,
+            protein: meal.nutrition.protein,
+            carbs: meal.nutrition.carbs,
+            fat: meal.nutrition.fat,
+            fiber: meal.nutrition.fiber,
+            sugar: meal.nutrition.sugar,
+            sodium: meal.nutrition.sodium,
+            tags: [profile.cuisineType || 'classique'],
+            category: meal.type,
+          },
+        })
+
+        await tx.menuItem.create({
+          data: {
+            planId: plan.id,
+            date: new Date(day.date),
+            mealType: meal.type,
+            recipeId: recipe.id,
+          },
+        })
       }
     }
-    await Promise.all(tasks)
+
     return plan
   })
 }

@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const modulePath = '../gemini'
 
@@ -41,11 +42,12 @@ test('analyzeNutrition parses model response', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'
   const { analyzeNutrition, setModel } = await import(modulePath)
-  setModel({
+  const mockModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> = {
     generateContent: async () => ({
       response: { text: () => '{"kcal": 100} extra' }
-    })
-  })
+    }) as any
+  } as any
+  setModel(mockModel)
   const result = await analyzeNutrition('test food')
   assert.deepEqual(result, { kcal: 100 })
   setModel(null)
