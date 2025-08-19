@@ -48,14 +48,22 @@ const outOfRangePlan = {
 
 test('saveMealPlan avoids duplicate recipe errors', async () => {
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  let upsertArgs: any
   ;(prisma as any).$transaction = async (cb: any) => {
     return cb({
       plan: { create: async () => ({ id: 1 }) },
-      recipe: { upsert: async () => ({ id: 1 }) },
+      recipe: {
+        upsert: async (args: any) => {
+          upsertArgs = args
+          return { id: 1 }
+        }
+      },
       menuItem: { create: async () => {} },
     })
   }
   await route.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-01', '2024-01-02')
+  assert.deepEqual(upsertArgs.where, { userId_name: { userId: '1', name: 'Omelette' } })
+  assert.equal(upsertArgs.create.userId, '1')
 })
 
 test('datesWithinRange flags out-of-range dates', async () => {
@@ -73,4 +81,38 @@ test('returns 400 on invalid JSON', async () => {
   })
   const res = await route.POST(req)
   assert.equal(res.status, 400)
+})
+
+test('mealPlanSchema accepts numeric strings', async () => {
+  const { mealPlanSchema } = await import('../../app/api/ai/generate-plan/route')
+  const result = mealPlanSchema.safeParse({
+    days: [
+      {
+        date: '2024-01-01',
+        meals: [
+          {
+            name: 'Soup',
+            instructions: [],
+            type: 'lunch',
+            prepTime: '10',
+            cookTime: '20',
+            servings: '2',
+            nutrition: {
+              kcal: '100',
+              protein: '10',
+              carbs: '20',
+              fat: '5',
+              fiber: '3',
+              sugar: '1',
+              sodium: '50',
+            },
+          },
+        ],
+      },
+    ],
+  })
+  assert.ok(result.success)
+  if (result.success) {
+    assert.equal(typeof result.data.days[0].meals[0].nutrition.kcal, 'number')
+  }
 })

@@ -24,3 +24,14 @@ test('handles unique constraint conflicts', async () => {
   const res = await POST(req)
   assert.equal(res.status, 400)
 })
+
+test('returns 400 on invalid JSON body', async () => {
+  const { POST } = await import('../../app/api/auth/register/route')
+  const req = new NextRequest('http://test', {
+    method: 'POST',
+    body: '{invalid',
+    headers: { 'content-type': 'application/json' }
+  })
+  const res = await POST(req)
+  assert.equal(res.status, 400)
+})
