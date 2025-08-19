@@ -46,6 +46,10 @@ export interface OptimizationResult {
   recommendations: string[]
 }
 
+export const MAX_STORE_COMBINATIONS = Number(
+  process.env.MAX_STORE_COMBINATIONS || '100000'
+)
+
 // Convertir les unités en unités de base pour la comparaison
 const weightUnits: Record<string, number> = {
   kg: 1000,
@@ -246,9 +250,12 @@ function findBestStoreCombination(
   // Générer toutes les combinaisons possibles de magasins
   const storeIds = Array.from(storeOffers.keys())
   const combinations: string[][] = []
-  
+
   for (let k = 1; k <= Math.min(maxStores, storeIds.length); k++) {
     generateCombinations(storeIds, k, 0, [], combinations)
+    if (combinations.length > MAX_STORE_COMBINATIONS) {
+      throw new Error('Too many store combinations')
+    }
   }
   
   let bestResult: Omit<OptimizationResult, 'recommendations'> | null = null

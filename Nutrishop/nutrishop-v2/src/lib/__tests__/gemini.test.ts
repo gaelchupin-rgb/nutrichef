@@ -83,3 +83,29 @@ test('analyzeNutrition rejects incomplete data', async () => {
   await assert.rejects(() => analyzeNutrition('bad'), /Invalid nutrition analysis format/)
   setModel(null)
 })
+
+test('generateMealPlan rejects oversized responses', async () => {
+  process.env.GOOGLE_API_KEY = 'test'
+  process.env.GEMINI_MODEL = 'test-model'
+  const { generateMealPlan, setModel, MAX_RESPONSE_LENGTH } = await import(modulePath)
+  const large = 'a'.repeat(MAX_RESPONSE_LENGTH + 1)
+  const mockModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> = {
+    generateContent: async () => ({ response: { text: () => large } }) as any
+  } as any
+  setModel(mockModel)
+  await assert.rejects(() => generateMealPlan('prompt'), /Gemini response too large/)
+  setModel(null)
+})
+
+test('analyzeNutrition rejects oversized responses', async () => {
+  process.env.GOOGLE_API_KEY = 'test'
+  process.env.GEMINI_MODEL = 'test-model'
+  const { analyzeNutrition, setModel, MAX_RESPONSE_LENGTH } = await import(modulePath)
+  const large = 'a'.repeat(MAX_RESPONSE_LENGTH + 1)
+  const mockModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> = {
+    generateContent: async () => ({ response: { text: () => large } }) as any
+  } as any
+  setModel(mockModel)
+  await assert.rejects(() => analyzeNutrition('food'), /Gemini response too large/)
+  setModel(null)
+})

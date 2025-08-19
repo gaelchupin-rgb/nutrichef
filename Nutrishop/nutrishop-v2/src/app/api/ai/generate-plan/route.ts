@@ -11,6 +11,7 @@ import {
   datesWithinRange,
   saveMealPlan,
 } from '@/lib/meal-plan'
+import { rateLimit } from '@/middleware/rate-limit'
 
 const requestSchema = z.object({
   startDate: z.string().refine(isValidDate, {
@@ -23,6 +24,10 @@ const requestSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const limit = rateLimit(req)
+    if (!limit.ok) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
     const contentType = req.headers.get('content-type') || ''
     if (!contentType.includes('application/json')) {
       return NextResponse.json({ error: 'Unsupported Media Type' }, { status: 415 })

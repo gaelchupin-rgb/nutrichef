@@ -3,15 +3,26 @@ import bcrypt from 'bcryptjs'
 import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
+import { rateLimit } from '@/middleware/rate-limit'
 
 const registerSchema = z.object({
   email: z.string().trim().email(),
   username: z.string().trim().min(3),
-  password: z.string().min(6)
+  password: z
+    .string()
+    .min(8)
+    .regex(/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9])/, {
+      message:
+        'Password must be 8+ chars with upper, lower, number and symbol'
+    })
 })
 
 export async function POST(request: NextRequest) {
   try {
+    const limit = rateLimit(request)
+    if (!limit.ok) {
+      return NextResponse.json({ message: 'Trop de requêtes' }, { status: 429 })
+    }
     const contentType = request.headers.get('content-type') || ''
     if (!contentType.includes('application/json')) {
       return NextResponse.json({ message: 'Content-Type invalide' }, { status: 415 })
@@ -24,7 +35,11 @@ export async function POST(request: NextRequest) {
     }
     const parsed = registerSchema.safeParse(json)
     if (!parsed.success) {
-      return NextResponse.json({ message: 'Données d\'inscription invalides' }, { status: 400 })
+      const passwordError = parsed.error.issues.find(i => i.path[0] === 'password')
+      const message = passwordError
+        ? 'Mot de passe invalide'
+        : "Données d'inscription invalides"
+      return NextResponse.json({ message }, { status: 400 })
     }
 
     const prisma = getPrisma()

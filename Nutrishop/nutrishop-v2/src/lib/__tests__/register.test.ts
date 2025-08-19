@@ -9,7 +9,7 @@ import { Prisma } from '@prisma/client'
 const requestBody = {
   email: 'a@a.com',
   username: 'user',
-  password: 'secret1'
+  password: 'Secret1!'
 }
 
 test('handles unique constraint conflicts', async () => {
@@ -51,7 +51,7 @@ test('normalizes email and username casing before persistence', async () => {
 
   const req = new NextRequest('http://test', {
     method: 'POST',
-    body: JSON.stringify({ email: ' TeSt@Example.COM ', username: ' UsEr ', password: 'secret1' }),
+    body: JSON.stringify({ email: ' TeSt@Example.COM ', username: ' UsEr ', password: 'Secret1!' }),
     headers: { 'content-type': 'application/json' }
   })
   await POST(req)
@@ -88,4 +88,16 @@ test('returns 415 on invalid Content-Type', async () => {
   })
   const res = await POST(req)
   assert.equal(res.status, 415)
+})
+
+test('returns 400 on weak password', async () => {
+  const { POST } = await import('../../app/api/auth/register/route')
+  const weak = { ...requestBody, password: 'weakpass' }
+  const req = new NextRequest('http://test', {
+    method: 'POST',
+    body: JSON.stringify(weak),
+    headers: { 'content-type': 'application/json' }
+  })
+  const res = await POST(req)
+  assert.equal(res.status, 400)
 })
