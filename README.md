@@ -33,6 +33,42 @@ Ce projet contient une application Next.js située dans `Nutrishop/nutrishop-v2`
    npm run dev
    ```
 
+### Installation (PowerShell)
+
+1. Ouvrir PowerShell (éventuellement en tant qu'administrateur).
+2. Aller dans le dossier de l'application :
+   ```powershell
+   cd .\Nutrishop\nutrishop-v2
+   ```
+3. Installer les dépendances :
+   ```powershell
+   npm install
+   ```
+4. (Optionnel) Définir les variables d'environnement pour la session courante :
+   ```powershell
+   $env:DATABASE_URL="..."
+   $env:GOOGLE_API_KEY="..."
+   $env:GEMINI_MODEL="..."
+   ```
+5. Générer le client Prisma :
+   ```powershell
+   npm run db:generate
+   ```
+6. Appliquer le schéma sur la base de données :
+   ```powershell
+   npm run db:push
+   ```
+7. (Optionnel) Peupler la base :
+   ```powershell
+   npm run db:seed
+   ```
+8. Lancer le serveur de développement :
+   ```powershell
+   npm run dev
+   ```
+
+> Assurez-vous d'avoir Node.js 20 ou supérieur installé.
+
 ## Tests
 
 Exécuter les tests unitaires:
