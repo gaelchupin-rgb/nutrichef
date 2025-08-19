@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/db'
+import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 
 const registerSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(3),
+  email: z.string().trim().email(),
+  username: z.string().trim().min(3),
   password: z.string().min(6)
 })
 
@@ -27,8 +27,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Données d\'inscription invalides' }, { status: 400 })
     }
 
-    const email = parsed.data.email.toLowerCase()
-    const username = parsed.data.username.toLowerCase()
+    const prisma = getPrisma()
+    const email = parsed.data.email.trim().toLowerCase()
+    const username = parsed.data.username.trim().toLowerCase()
     const { password } = parsed.data
 
     // Hash password

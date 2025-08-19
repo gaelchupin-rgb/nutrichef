@@ -2,7 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '../db'
+import { getPrisma } from '../db'
+const prisma = getPrisma()
 import { Prisma } from '@prisma/client'
 
 const requestBody = {
@@ -50,7 +51,7 @@ test('normalizes email and username casing before persistence', async () => {
 
   const req = new NextRequest('http://test', {
     method: 'POST',
-    body: JSON.stringify({ email: 'TeSt@Example.COM', username: 'UsEr', password: 'secret1' }),
+    body: JSON.stringify({ email: ' TeSt@Example.COM ', username: ' UsEr ', password: 'secret1' }),
     headers: { 'content-type': 'application/json' }
   })
   await POST(req)

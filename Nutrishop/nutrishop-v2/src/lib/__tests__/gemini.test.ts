@@ -47,6 +47,14 @@ test('parseMealPlanResponse handles braces inside strings', async () => {
   assert.deepEqual(data, { a: 'value with { brace', b: 1 })
 })
 
+test('parseMealPlanResponse repairs malformed JSON', async () => {
+  process.env.GOOGLE_API_KEY = 'test'
+  process.env.GEMINI_MODEL = 'test-model'
+  const { parseMealPlanResponse } = await import(modulePath)
+  const data = parseMealPlanResponse('noise {a:1,} more')
+  assert.deepEqual(data, { a: 1 })
+})
+
 test('analyzeNutrition parses model response', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'
