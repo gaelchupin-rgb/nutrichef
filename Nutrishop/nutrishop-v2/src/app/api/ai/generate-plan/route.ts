@@ -7,16 +7,23 @@ import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
 import { z } from 'zod'
 
+export const sessionFetcher = { get: getServerSession }
+
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await sessionFetcher.get(authOptions)
     const userId = (session?.user as { id: string } | undefined)?.id
 
     if (!session || !userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await req.json()
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    }
     const schema = z.object({
       startDate: z.string().refine((d) => !isNaN(Date.parse(d)), {
         message: 'Invalid startDate'
@@ -93,59 +100,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid meal date' }, { status: 400 })
     }
 
-    // Save plan and menu items atomically
-    const plan = await prisma.$transaction(async (tx) => {
-      const plan = await tx.plan.create({
-        data: {
-          userId,
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
-        }
-      })
+    if (!datesWithinRange(validMealPlan.days, startDate, endDate)) {
+      return NextResponse.json({ error: 'Invalid meal date' }, { status: 400 })
+    }
 
-      await Promise.all(
-        validMealPlan.days.map((day) =>
-          Promise.all(
-            day.meals.map(async (meal) => {
-              let recipe = await tx.recipe.findFirst({
-                where: { name: meal.name }
-              })
-              if (!recipe) {
-                recipe = await tx.recipe.create({
-                  data: {
-                    name: meal.name,
-                    description: meal.description,
-                    instructions: Array.isArray(meal.instructions) ? meal.instructions.join('\n') : '',
-                    prepTime: meal.prepTime,
-                    cookTime: meal.cookTime,
-                    servings: meal.servings,
-                    difficulty: meal.difficulty,
-                    kcal: meal.nutrition.kcal,
-                    protein: meal.nutrition.protein,
-                    carbs: meal.nutrition.carbs,
-                    fat: meal.nutrition.fat,
-                    fiber: meal.nutrition.fiber,
-                    sugar: meal.nutrition.sugar,
-                    sodium: meal.nutrition.sodium,
-                    tags: [profile.cuisineType || 'classique'],
-                    category: meal.type,
-                  }
-                })
-              }
-              await tx.menuItem.create({
-                data: {
-                  planId: plan.id,
-                  date: new Date(day.date),
-                  mealType: meal.type,
-                  recipeId: recipe.id,
-                }
-              })
-            })
-          )
-        )
-      )
-      return plan
-    })
+    const plan = await saveMealPlan(validMealPlan, profile, userId, startDate, endDate)
 
     return NextResponse.json({
       success: true,
@@ -165,4 +124,94 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export function datesWithinRange(
+  days: Array<{ date: string }>,
+  startDate: string,
+  endDate: string
+) {
+  const start = new Date(startDate).getTime()
+  const end = new Date(endDate).getTime()
+  return days.every((day) => {
+    const time = new Date(day.date).getTime()
+    return time >= start && time <= end
+  })
+}
+
+export async function saveMealPlan(
+  validMealPlan: {
+    days: Array<{
+      date: string
+      meals: Array<{
+        name: string
+        description?: string
+        instructions: string[]
+        prepTime?: number
+        cookTime?: number
+        servings?: number
+        difficulty?: string
+        type: string
+        nutrition: {
+          kcal: number
+          protein: number
+          carbs: number
+          fat: number
+          fiber: number
+          sugar: number
+          sodium: number
+        }
+      }>
+    }>
+  },
+  profile: any,
+  userId: string,
+  startDate: string,
+  endDate: string
+) {
+  return prisma.$transaction(async (tx) => {
+    const plan = await tx.plan.create({
+      data: {
+        userId,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+      },
+    })
+
+    for (const day of validMealPlan.days) {
+      for (const meal of day.meals) {
+        const recipe = await tx.recipe.upsert({
+          where: { name: meal.name },
+          update: {},
+          create: {
+            name: meal.name,
+            description: meal.description,
+            instructions: Array.isArray(meal.instructions) ? meal.instructions.join('\n') : '',
+            prepTime: meal.prepTime,
+            cookTime: meal.cookTime,
+            servings: meal.servings,
+            difficulty: meal.difficulty,
+            kcal: meal.nutrition.kcal,
+            protein: meal.nutrition.protein,
+            carbs: meal.nutrition.carbs,
+            fat: meal.nutrition.fat,
+            fiber: meal.nutrition.fiber,
+            sugar: meal.nutrition.sugar,
+            sodium: meal.nutrition.sodium,
+            tags: [profile.cuisineType || 'classique'],
+            category: meal.type,
+          },
+        })
+        await tx.menuItem.create({
+          data: {
+            planId: plan.id,
+            date: new Date(day.date),
+            mealType: meal.type,
+            recipeId: recipe.id,
+          },
+        })
+      }
+    }
+    return plan
+  })
 }

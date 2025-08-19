@@ -82,7 +82,7 @@ function getPricePerBaseUnit(offer: StoreOffer): number | null {
 }
 
 // Filtrer les offres aberrantes
-function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
+export function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
   // Grouper par produit normalisé
   const productGroups = new Map<string, StoreOffer[]>()
   
@@ -104,7 +104,9 @@ function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
     }
     
     // Calculer les prix par unité de base
-    const prices = groupOffers.map(offer => getPricePerBaseUnit(offer)).filter(Boolean) as number[]
+    const prices = groupOffers
+      .map(offer => getPricePerBaseUnit(offer))
+      .filter((p): p is number => p !== null)
     
     if (prices.length === 0) return
     
@@ -123,7 +125,7 @@ function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
     // Filtrer les offres
     groupOffers.forEach((offer) => {
       const price = getPricePerBaseUnit(offer)
-      if (price && price >= lowerBound && price <= upperBound) {
+      if (price !== null && price >= lowerBound && price <= upperBound) {
         filteredOffers.push(offer)
       }
     })

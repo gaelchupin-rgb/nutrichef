@@ -7,9 +7,7 @@ import { prisma } from '../db'
 const requestBody = {
   email: 'a@a.com',
   username: 'user',
-  password: 'secret1',
-  firstName: 'A',
-  lastName: 'B'
+  password: 'secret1'
 }
 
 test('handles unique constraint conflicts', async () => {
