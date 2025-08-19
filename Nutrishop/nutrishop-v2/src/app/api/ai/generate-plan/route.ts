@@ -45,6 +45,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid date range' }, { status: 400 })
     }
 
+    const maxRangeDays = 30
+    const rangeDays =
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
+    if (rangeDays > maxRangeDays) {
+      return NextResponse.json({ error: 'Date range too long' }, { status: 400 })
+    }
+
     // Get user profile
     const profile = await prisma.profile.findUnique({
       where: { userId },
@@ -62,8 +69,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Build prompt
-    const prompt = buildMealPlanPrompt({ ...profile, cuisineType: profile.cuisineType ?? undefined }, startDate, endDate)
-    
+    const prompt = buildMealPlanPrompt(
+      { cuisineType: profile.cuisineType ?? undefined, appliances: profile.appliances },
+      startDate,
+      endDate
+    )
+
     // Generate meal plan
     const mealPlan = await generateMealPlan(prompt)
     const parsedPlan = mealPlanSchema.safeParse(mealPlan)
@@ -83,7 +94,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid meal date' }, { status: 400 })
     }
 
-    const plan = await saveMealPlan(validMealPlan, profile, userId, startDate, endDate)
+    const plan = await saveMealPlan(
+      validMealPlan,
+      { cuisineType: profile.cuisineType ?? undefined },
+      userId,
+      startDate,
+      endDate
+    )
 
     return NextResponse.json({
       success: true,

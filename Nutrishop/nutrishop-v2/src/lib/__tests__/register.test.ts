@@ -12,7 +12,7 @@ const requestBody = {
 
 test('handles unique constraint conflicts', async () => {
   const { POST } = await import('../../app/api/auth/register/route')
-  ;(prisma.user as any).findFirst = async () => null
+  ;(prisma.user as any).findFirst = () => { throw new Error('should not be called') }
   ;(prisma as any).$transaction = async () => { const e: any = new Error(''); e.code = 'P2002'; throw e }
   ;(bcrypt as any).hash = async () => 'hashed'
 
@@ -25,14 +25,10 @@ test('handles unique constraint conflicts', async () => {
   assert.equal(res.status, 400)
 })
 
-test('normalizes email casing before persistence', async () => {
+test('normalizes email and username casing before persistence', async () => {
   const { POST } = await import('../../app/api/auth/register/route')
-  let findArgs: any
   let createArgs: any
-  ;(prisma.user as any).findFirst = async (args: any) => {
-    findArgs = args
-    return null
-  }
+  ;(prisma.user as any).findFirst = () => { throw new Error('should not be called') }
   ;(prisma as any).$transaction = async (cb: any) => {
     return cb({
       user: {
@@ -48,12 +44,12 @@ test('normalizes email casing before persistence', async () => {
 
   const req = new NextRequest('http://test', {
     method: 'POST',
-    body: JSON.stringify({ email: 'TeSt@Example.COM', username: 'user', password: 'secret1' }),
+    body: JSON.stringify({ email: 'TeSt@Example.COM', username: 'UsEr', password: 'secret1' }),
     headers: { 'content-type': 'application/json' }
   })
   await POST(req)
-  assert.equal(findArgs.where.OR[0].email, 'test@example.com')
   assert.equal(createArgs.data.email, 'test@example.com')
+  assert.equal(createArgs.data.username, 'user')
 })
 
 test('authorize returns null if password hash comparison fails', async () => {
