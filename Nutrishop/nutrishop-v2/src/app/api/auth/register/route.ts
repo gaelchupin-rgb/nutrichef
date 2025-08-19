@@ -11,6 +11,10 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const contentType = request.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      return NextResponse.json({ message: 'Content-Type invalide' }, { status: 415 })
+    }
     let json: unknown
     try {
       json = await request.json()

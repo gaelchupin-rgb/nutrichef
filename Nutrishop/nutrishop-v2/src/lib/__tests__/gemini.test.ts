@@ -28,6 +28,15 @@ test('parseMealPlanResponse handles nested JSON', async () => {
   assert.deepEqual(data, { a: { b: [1, 2, { c: 3 }] } })
 })
 
+test('parseMealPlanResponse strips code fences and extra text', async () => {
+  process.env.GOOGLE_API_KEY = 'test'
+  process.env.GEMINI_MODEL = 'test-model'
+  const { parseMealPlanResponse } = await import(modulePath)
+  const response = '```json\n{"days": []}\n``` noise'
+  const data = parseMealPlanResponse(response)
+  assert.deepEqual(data, { days: [] })
+})
+
 test('analyzeNutrition parses model response', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'
