@@ -12,7 +12,10 @@ Ce projet contient une application Next.js située dans `Nutrishop/nutrishop-v2`
    ```bash
    npm install
    ```
-3. Configurer les variables d'environnement dans un fichier `.env` (par exemple `DATABASE_URL`, `GOOGLE_API_KEY`...).
+3. Configurer les variables d'environnement dans un fichier `.env` :
+   - `DATABASE_URL`
+   - `GOOGLE_API_KEY`
+   - `GEMINI_MODEL`
 4. Générer le client Prisma:
    ```bash
    npm run db:generate

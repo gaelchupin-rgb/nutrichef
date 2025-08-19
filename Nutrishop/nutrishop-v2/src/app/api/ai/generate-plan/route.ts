@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { generateMealPlan } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
+import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
 import { z } from 'zod'
 
 export async function POST(req: NextRequest) {
@@ -29,7 +30,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
     }
     const { startDate, endDate } = parsed.data
-    
+
+    if (!isValidDateRange(startDate, endDate)) {
+      return NextResponse.json({ error: 'Invalid date range' }, { status: 400 })
+    }
+
     // Get user profile
     const profile = await prisma.profile.findUnique({
       where: { userId },
@@ -83,6 +88,10 @@ export async function POST(req: NextRequest) {
       )
     }
     const validMealPlan = parsedPlan.data
+
+    if (!hasValidMealDates(validMealPlan.days)) {
+      return NextResponse.json({ error: 'Invalid meal date' }, { status: 400 })
+    }
 
     // Save plan and menu items atomically
     const plan = await prisma.$transaction(async (tx) => {

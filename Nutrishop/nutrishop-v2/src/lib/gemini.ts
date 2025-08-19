@@ -1,14 +1,26 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const apiKey = process.env.GOOGLE_API_KEY
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
-const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+const modelName = process.env.GEMINI_MODEL
 
-export const model = genAI ? genAI.getGenerativeModel({ model: modelName }) : null
+if (!apiKey) {
+  throw new Error('GOOGLE_API_KEY is required')
+}
+if (!modelName) {
+  throw new Error('GEMINI_MODEL is required')
+}
+
+const genAI = new GoogleGenerativeAI(apiKey)
+
+export const model = genAI.getGenerativeModel({ model: modelName })
 
 export function parseMealPlanResponse(text: string) {
+  const match = text.match(/(?:\{[\s\S]*\}|\[[\s\S]*\])/)
+  if (!match) {
+    throw new Error('Invalid meal plan format')
+  }
   try {
-    return JSON.parse(text)
+    return JSON.parse(match[0])
   } catch {
     throw new Error('Invalid meal plan format')
   }
@@ -16,7 +28,6 @@ export function parseMealPlanResponse(text: string) {
 
 export async function generateMealPlan(prompt: string) {
   try {
-    if (!model) throw new Error('GOOGLE_API_KEY is required')
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
@@ -31,11 +42,11 @@ export async function generateMealPlan(prompt: string) {
 }
 
 export async function analyzeNutrition(foodDescription: string) {
-  const prompt = `Analyse la valeur nutritionnelle de ce plat: "${foodDescription}".
-  Réponds au format JSON avec les champs: kcal, protein (g), carbs (g), fat (g), fiber (g), sugar (g), sodium (mg).`
+  const prompt =
+    `Analyse la valeur nutritionnelle de ce plat: "${foodDescription}". ` +
+    `Réponds au format JSON avec les champs: kcal, protein (g), carbs (g), fat (g), fiber (g), sugar (g), sodium (mg).`
 
   try {
-    if (!model) throw new Error('GOOGLE_API_KEY is required')
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
@@ -47,9 +58,6 @@ export async function analyzeNutrition(foodDescription: string) {
     }
   } catch (error) {
     console.error('Error analyzing nutrition:', error)
-    if (error instanceof Error && error.message === 'GOOGLE_API_KEY is required') {
-      throw error
-    }
     throw new Error('Failed to analyze nutrition')
   }
 }
