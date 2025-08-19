@@ -335,7 +335,7 @@ function evaluateCombination(
 }
 
 // Générer des recommandations
-function generateRecommendations(result: Omit<OptimizationResult, 'recommendations'>, needs: ShoppingNeed[]): string[] {
+export function generateRecommendations(result: Omit<OptimizationResult, 'recommendations'>, needs: ShoppingNeed[]): string[] {
   const recommendations: string[] = []
   
   // Recommandations basées sur les économies
@@ -359,7 +359,10 @@ function generateRecommendations(result: Omit<OptimizationResult, 'recommendatio
   }
   
   // Recommandations basées sur la distance
-  const maxDistance = Math.max(...result.stores.map(store => store.distance || 0))
+  const maxDistance =
+    result.stores.length > 0
+      ? Math.max(...result.stores.map(store => store.distance || 0))
+      : 0
   if (maxDistance > 5) {
     recommendations.push(`Certains magasins sont à plus de ${maxDistance}km, envisagez la livraison`)
   }

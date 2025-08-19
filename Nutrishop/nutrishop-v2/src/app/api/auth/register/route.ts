@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     // Create user and profile atomically
-    await prisma.$transaction(async (tx) => {
+    try {
+      await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email,
@@ -57,6 +58,15 @@ export async function POST(request: NextRequest) {
         }
       })
     })
+    } catch (error) {
+      if (error instanceof Error && (error as any).code === 'P2002') {
+        return NextResponse.json(
+          { message: 'Un utilisateur avec cet email ou ce nom d\'utilisateur existe déjà' },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
 
     return NextResponse.json(
       { message: 'Utilisateur créé avec succès' },
