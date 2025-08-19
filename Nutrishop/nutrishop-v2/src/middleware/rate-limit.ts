@@ -21,9 +21,14 @@ function cleanup() {
 
 setInterval(cleanup, WINDOW_MS).unref?.()
 
+/**
+ * Extract the client IP from common proxy headers or the request object.
+ * Falls back to 127.0.0.1 when no information is available.
+ */
 function getIP(req: NextRequest) {
   return (
     req.headers.get('x-forwarded-for')?.split(',')[0] ||
+    req.headers.get('x-real-ip') ||
     (req as any).ip ||
     '127.0.0.1'
   )

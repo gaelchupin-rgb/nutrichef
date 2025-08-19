@@ -4,7 +4,7 @@ import { getPrisma } from '@/lib/db'
 import { generateMealPlan } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates, isValidDate } from '@/lib/date-utils'
-import { differenceInCalendarDays } from 'date-fns'
+import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { z } from 'zod'
 import {
   sessionFetcher,
@@ -57,7 +57,10 @@ export async function POST(req: NextRequest) {
     }
 
     const maxRangeDays = 30
-    const rangeDays = differenceInCalendarDays(new Date(endDate), new Date(startDate))
+    const rangeDays = differenceInCalendarDays(
+      parseISO(endDate),
+      parseISO(startDate)
+    )
     if (rangeDays > maxRangeDays) {
       return NextResponse.json({ error: 'Date range too long' }, { status: 400 })
     }

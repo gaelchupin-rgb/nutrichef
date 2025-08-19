@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { isValidDate } from '@/lib/date-utils'
+import { parseISO } from 'date-fns'
 
 export interface MealPlanProfile {
   cuisineType?: string
@@ -44,11 +45,11 @@ export function datesWithinRange(
   endDate: string
 ) {
   if (!isValidDate(startDate) || !isValidDate(endDate)) return false
-  const start = new Date(startDate).getTime()
-  const end = new Date(endDate).getTime()
+  const start = parseISO(startDate).getTime()
+  const end = parseISO(endDate).getTime()
   return days.every((day) => {
     if (!isValidDate(day.date)) return false
-    const time = new Date(day.date).getTime()
+    const time = parseISO(day.date).getTime()
     return time >= start && time <= end
   })
 }
@@ -88,41 +89,41 @@ export async function saveMealPlan(
     const plan = await tx.plan.create({
       data: {
         userId,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: parseISO(startDate),
+        endDate: parseISO(endDate),
       },
     })
 
     for (const day of validMealPlan.days) {
       for (const meal of day.meals) {
+        const recipeData = {
+          description: meal.description,
+          instructions: meal.instructions.join('\n'),
+          prepTime: meal.prepTime,
+          cookTime: meal.cookTime,
+          servings: meal.servings,
+          difficulty: meal.difficulty,
+          kcal: meal.nutrition.kcal,
+          protein: meal.nutrition.protein,
+          carbs: meal.nutrition.carbs,
+          fat: meal.nutrition.fat,
+          fiber: meal.nutrition.fiber,
+          sugar: meal.nutrition.sugar,
+          sodium: meal.nutrition.sodium,
+          tags: [profile.cuisineType || 'classique'],
+          category: meal.type,
+        }
+
         const recipe = await tx.recipe.upsert({
           where: { userId_name: { userId, name: meal.name } },
-          update: {},
-          create: {
-            userId,
-            name: meal.name,
-            description: meal.description,
-            instructions: meal.instructions.join('\n'),
-            prepTime: meal.prepTime,
-            cookTime: meal.cookTime,
-            servings: meal.servings,
-            difficulty: meal.difficulty,
-            kcal: meal.nutrition.kcal,
-            protein: meal.nutrition.protein,
-            carbs: meal.nutrition.carbs,
-            fat: meal.nutrition.fat,
-            fiber: meal.nutrition.fiber,
-            sugar: meal.nutrition.sugar,
-            sodium: meal.nutrition.sodium,
-            tags: [profile.cuisineType || 'classique'],
-            category: meal.type,
-          },
+          update: recipeData,
+          create: { userId, name: meal.name, ...recipeData },
         })
 
         await tx.menuItem.create({
           data: {
             planId: plan.id,
-            date: new Date(day.date),
+            date: parseISO(day.date),
             mealType: meal.type,
             recipeId: recipe.id,
           },
