@@ -1,21 +1,31 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const apiKey = process.env.GOOGLE_API_KEY
-const modelName = process.env.GEMINI_MODEL
+let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
 
-if (!apiKey) {
-  throw new Error('GOOGLE_API_KEY is required')
-}
-if (!modelName) {
-  throw new Error('GEMINI_MODEL is required')
+export function setModel(testModel: any) {
+  model = testModel
 }
 
-const genAI = new GoogleGenerativeAI(apiKey)
+function getModel() {
+  if (!model) {
+    const apiKey = process.env.GOOGLE_API_KEY
+    const modelName = process.env.GEMINI_MODEL
+    if (!apiKey) {
+      throw new Error('GOOGLE_API_KEY is required')
+    }
+    if (!modelName) {
+      throw new Error('GEMINI_MODEL is required')
+    }
+    const genAI = new GoogleGenerativeAI(apiKey)
+    model = genAI.getGenerativeModel({ model: modelName })
+  }
+  return model
+}
 
-export const model = genAI.getGenerativeModel({ model: modelName })
+export { getModel }
 
 export function parseMealPlanResponse(text: string) {
-  const match = text.match(/(?:\{[\s\S]*\}|\[[\s\S]*\])/)
+  const match = text.match(/(\{[\s\S]*?\}|\[[\s\S]*?\])/)
   if (!match) {
     throw new Error('Invalid meal plan format')
   }
@@ -28,7 +38,7 @@ export function parseMealPlanResponse(text: string) {
 
 export async function generateMealPlan(prompt: string) {
   try {
-    const result = await model.generateContent(prompt)
+    const result = await getModel().generateContent(prompt)
     const response = await result.response
     const text = response.text()
     return parseMealPlanResponse(text)
@@ -47,12 +57,12 @@ export async function analyzeNutrition(foodDescription: string) {
     `Réponds au format JSON avec les champs: kcal, protein (g), carbs (g), fat (g), fiber (g), sugar (g), sodium (mg).`
 
   try {
-    const result = await model.generateContent(prompt)
+    const result = await getModel().generateContent(prompt)
     const response = await result.response
     const text = response.text()
 
     try {
-      return JSON.parse(text)
+      return parseMealPlanResponse(text)
     } catch {
       throw new Error('Invalid nutrition analysis format')
     }

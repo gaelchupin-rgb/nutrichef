@@ -6,9 +6,7 @@ import { z } from 'zod'
 const registerSchema = z.object({
   email: z.string().email(),
   username: z.string().min(3),
-  password: z.string().min(6),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1)
+  password: z.string().min(6)
 })
 
 export async function POST(request: NextRequest) {
@@ -19,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Données d\'inscription invalides' }, { status: 400 })
     }
 
-    const { email, username, password, firstName, lastName } = parsed.data
+    const { email, username, password } = parsed.data
 
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
