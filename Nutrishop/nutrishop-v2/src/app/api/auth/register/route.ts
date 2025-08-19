@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -51,7 +52,10 @@ export async function POST(request: NextRequest) {
         })
       })
     } catch (error) {
-      if (error instanceof Error && (error as any).code === 'P2002') {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
         return NextResponse.json(
           { message: 'Un utilisateur avec cet email ou ce nom d\'utilisateur existe déjà' },
           { status: 400 }

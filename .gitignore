@@ -1,3 +1,4 @@
 node_modules/
 Nutrishop/nutrishop-v2/node_modules/
 .env
+*.zip

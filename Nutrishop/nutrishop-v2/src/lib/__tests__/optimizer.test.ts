@@ -61,7 +61,7 @@ test('filterOutliers keeps free offers', () => {
   assert.ok(res.some((o) => o.price === 0))
 })
 
-test('normalizeToBaseUnit converts imperial and litre units', () => {
+test('normalizeToBaseUnit converts various units', () => {
   const lb = normalizeToBaseUnit(1, 'lb')!
   assert.equal(lb.baseUnit, 'g')
   assert.ok(Math.abs(lb.value - 453.592) < 0.001)
@@ -81,6 +81,18 @@ test('normalizeToBaseUnit converts imperial and litre units', () => {
   const ml = normalizeToBaseUnit(500, 'milliliters')!
   assert.equal(ml.baseUnit, 'ml')
   assert.equal(ml.value, 500)
+
+  const mg = normalizeToBaseUnit(5000, 'mg')!
+  assert.equal(mg.baseUnit, 'g')
+  assert.equal(mg.value, 5)
+
+  const cl = normalizeToBaseUnit(2, 'centilitre')!
+  assert.equal(cl.baseUnit, 'ml')
+  assert.equal(cl.value, 20)
+
+  const pcs = normalizeToBaseUnit(3, 'pcs')!
+  assert.equal(pcs.baseUnit, 'unit')
+  assert.equal(pcs.value, 3)
 })
 
 test('namesMatch handles token order and minor differences', () => {

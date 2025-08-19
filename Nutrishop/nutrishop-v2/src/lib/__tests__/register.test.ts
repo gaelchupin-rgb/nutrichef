@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../db'
+import { Prisma } from '@prisma/client'
 
 const requestBody = {
   email: 'a@a.com',
@@ -13,7 +14,12 @@ const requestBody = {
 test('handles unique constraint conflicts', async () => {
   const { POST } = await import('../../app/api/auth/register/route')
   ;(prisma.user as any).findFirst = () => { throw new Error('should not be called') }
-  ;(prisma as any).$transaction = async () => { const e: any = new Error(''); e.code = 'P2002'; throw e }
+  ;(prisma as any).$transaction = async () => {
+    throw new Prisma.PrismaClientKnownRequestError('', {
+      code: 'P2002',
+      clientVersion: '5.7.1'
+    })
+  }
   ;(bcrypt as any).hash = async () => 'hashed'
 
   const req = new NextRequest('http://test', {
