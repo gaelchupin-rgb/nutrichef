@@ -9,8 +9,9 @@ import { z } from 'zod'
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
-    if (!session) {
+    const userId = (session?.user as { id: string } | undefined)?.id
+
+    if (!session || !userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     
     // Get user profile
     const profile = await prisma.profile.findUnique({
-      where: { userId: session.user.id },
+      where: { userId },
       include: {
         appliances: {
           include: {
@@ -46,30 +47,57 @@ export async function POST(req: NextRequest) {
     }
 
     // Build prompt
-    const prompt = buildMealPlanPrompt(profile, startDate, endDate)
+    const prompt = buildMealPlanPrompt({ ...profile, cuisineType: profile.cuisineType ?? undefined }, startDate, endDate)
     
     // Generate meal plan
     const mealPlan = await generateMealPlan(prompt)
-    if (!mealPlan || !Array.isArray(mealPlan.days)) {
+    const mealPlanSchema = z.object({
+      days: z.array(z.object({
+        date: z.string(),
+        meals: z.array(z.object({
+          name: z.string(),
+          description: z.string().optional(),
+          instructions: z.array(z.string()),
+          prepTime: z.number().optional(),
+          cookTime: z.number().optional(),
+          servings: z.number().optional(),
+          difficulty: z.string().optional(),
+          type: z.string(),
+          nutrition: z.object({
+            kcal: z.number(),
+            protein: z.number(),
+            carbs: z.number(),
+            fat: z.number(),
+            fiber: z.number(),
+            sugar: z.number(),
+            sodium: z.number()
+          })
+        }))
+      }))
+    })
+    const parsedPlan = mealPlanSchema.safeParse(mealPlan)
+    if (!parsedPlan.success) {
       return NextResponse.json(
         { error: 'Invalid meal plan format' },
         { status: 500 }
       )
     }
+    const validMealPlan = parsedPlan.data
+
     // Save plan and menu items atomically
     const plan = await prisma.$transaction(async (tx) => {
       const plan = await tx.plan.create({
         data: {
-          userId: session.user.id,
+          userId,
           startDate: new Date(startDate),
           endDate: new Date(endDate),
         }
       })
 
       await Promise.all(
-        mealPlan.days.map((day: any) =>
+        validMealPlan.days.map((day) =>
           Promise.all(
-            day.meals.map(async (meal: any) => {
+            day.meals.map(async (meal) => {
               let recipe = await tx.recipe.findFirst({
                 where: { name: meal.name }
               })
@@ -78,7 +106,7 @@ export async function POST(req: NextRequest) {
                   data: {
                     name: meal.name,
                     description: meal.description,
-                    instructions: meal.instructions.join('\n'),
+                    instructions: Array.isArray(meal.instructions) ? meal.instructions.join('\n') : '',
                     prepTime: meal.prepTime,
                     cookTime: meal.cookTime,
                     servings: meal.servings,
@@ -113,7 +141,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       planId: plan.id,
-      mealPlan
+      mealPlan: validMealPlan
     })
   } catch (error) {
     console.error('Error generating meal plan:', error)

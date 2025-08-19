@@ -49,33 +49,35 @@ export interface OptimizationResult {
 // Convertir les unités en unités de base pour la comparaison
 function normalizeToBaseUnit(value: number, unit: string): { value: number; baseUnit: string } | null {
   const normalizedUnit = unit.toLowerCase()
-  
+
   // Poids
   if (normalizedUnit === 'kg') return { value: value * 1000, baseUnit: 'g' }
   if (normalizedUnit === 'g') return { value, baseUnit: 'g' }
   if (normalizedUnit === 'mg') return { value: value / 1000, baseUnit: 'g' }
-  
+
   // Volume
   if (normalizedUnit === 'l' || normalizedUnit === 'lt') return { value: value * 1000, baseUnit: 'ml' }
   if (normalizedUnit === 'ml') return { value, baseUnit: 'ml' }
   if (normalizedUnit === 'cl') return { value: value * 10, baseUnit: 'ml' }
-  
+
   // Unités
   if (normalizedUnit === 'u' || normalizedUnit === 'unit' || normalizedUnit === 'pièce' || normalizedUnit === 'pcs') {
     return { value, baseUnit: 'unit' }
   }
-  
-  // Valeur par défaut
-  return { value, baseUnit: 'unit' }
+
+  // Unité non reconnue
+  return null
 }
 
 // Calculer le prix par unité de base
 function getPricePerBaseUnit(offer: StoreOffer): number | null {
-  const { value: baseQuantity, baseUnit } = normalizeToBaseUnit(offer.quantity, offer.unit) || { value: 0, baseUnit: 'unit' }
+  const normalized = normalizeToBaseUnit(offer.quantity, offer.unit)
+  if (!normalized) return null
+  const { value: baseQuantity } = normalized
   const price = offer.isPromo && offer.promoPrice ? offer.promoPrice : offer.price
-  
+
   if (baseQuantity <= 0) return null
-  
+
   return price / baseQuantity
 }
 
@@ -156,24 +158,33 @@ function findBestStoreCombination(
     generateCombinations(storeIds, k, 0, [], combinations)
   }
   
-  let bestResult: OptimizationResult | null = null
+  let bestResult: Omit<OptimizationResult, 'recommendations'> | null = null
   let bestCost = Infinity
-  
+
   // Évaluer chaque combinaison
   for (const combination of combinations) {
     const result = evaluateCombination(needs, combination, storeOffers)
-    
+
     if (result.total < bestCost) {
       bestCost = result.total
       bestResult = result
     }
   }
-  
+  if (!bestResult) {
+    return {
+      stores: [],
+      items: [],
+      total: 0,
+      savings: 0,
+      recommendations: ['Aucune combinaison de magasins trouvée']
+    }
+  }
+
   // Générer des recommandations
-  const recommendations = generateRecommendations(bestResult!, needs)
-  
+  const recommendations = generateRecommendations(bestResult, needs)
+
   return {
-    ...bestResult!,
+    ...bestResult,
     recommendations
   }
 }
@@ -228,81 +239,90 @@ function evaluateCombination(
   })
   
   // Pour chaque besoin, trouver la meilleure offre dans les magasins sélectionnés
-  needs.forEach(need => {
+  for (const need of needs) {
     let bestOffer: StoreOffer | null = null
     let bestStoreIndex = -1
-    let bestPrice = Infinity
-    
+    let bestTotalPrice = Infinity
+
     // Normaliser le besoin
-    const { value: neededQuantity, baseUnit: neededUnit } = normalizeToBaseUnit(need.quantity, need.unit) || { value: 0, baseUnit: 'unit' }
-    
+    const needNormalized = normalizeToBaseUnit(need.quantity, need.unit)
+    if (!needNormalized) continue
+    const { value: neededQuantity, baseUnit: neededUnit } = needNormalized
+
     // Chercher dans chaque magasin
-    storeIds.forEach((storeId, storeIndex) => {
+    for (let storeIndex = 0; storeIndex < storeIds.length; storeIndex++) {
+      const storeId = storeIds[storeIndex]
       const offers = storeOffers.get(storeId) || []
-      
-      // Trouver des offres correspondantes
-      const matchingOffers = offers.filter(offer => {
+
+      for (const offer of offers) {
         const offerProduct = offer.productName.toLowerCase().trim()
         const needProduct = need.name.toLowerCase().trim()
-        
+
         // Correspondance simple (à améliorer avec un meilleur matching)
-        return offerProduct.includes(needProduct) || needProduct.includes(offerProduct)
-      })
-      
-      // Évaluer chaque offre correspondante
-      matchingOffers.forEach(offer => {
-        const { value: offerQuantity, baseUnit: offerUnit } = normalizeToBaseUnit(offer.quantity, offer.unit) || { value: 0, baseUnit: 'unit' }
-        
-        if (offerUnit === neededUnit) {
+        if (!offerProduct.includes(needProduct) && !needProduct.includes(offerProduct)) {
+          continue
+        }
+
+        const offerNormalized = normalizeToBaseUnit(offer.quantity, offer.unit)
+        if (!offerNormalized) continue
+        const { value: offerQuantity, baseUnit: offerUnit } = offerNormalized
+
+        if (offerUnit === neededUnit && offerQuantity > 0) {
           const price = offer.isPromo && offer.promoPrice ? offer.promoPrice : offer.price
-          const pricePerUnit = price / offerQuantity
-          const totalPrice = pricePerUnit * neededQuantity
-          
-          if (totalPrice < bestPrice) {
-            bestPrice = totalPrice
+          const requiredPackages = Math.ceil(neededQuantity / offerQuantity)
+          const totalPrice = price * requiredPackages
+
+          if (totalPrice < bestTotalPrice) {
+            bestTotalPrice = totalPrice
             bestOffer = offer
             bestStoreIndex = storeIndex
           }
         }
-      })
-    })
-    
-    // Ajouter l'offre au résultat
-    if (bestOffer && bestStoreIndex >= 0) {
-      const price = bestOffer.isPromo && bestOffer.promoPrice ? bestOffer.promoPrice : bestOffer.price
-      const originalPrice = bestOffer.price
-      const quantity = Math.ceil(neededQuantity / (normalizeToBaseUnit(bestOffer.quantity, bestOffer.unit)?.value || 1))
-      
-      items[bestStoreIndex].items.push({
-        need,
-        offer: bestOffer,
-        quantity,
-        totalPrice: bestPrice * quantity
-      })
-      
-      items[bestStoreIndex].total += bestPrice * quantity
-      total += bestPrice * quantity
-      
-      if (bestOffer.isPromo) {
-        savings += (originalPrice - bestOffer.promoPrice!) * quantity
       }
     }
-  })
+
+    // Ajouter l'offre au résultat
+    if (bestOffer && bestStoreIndex >= 0) {
+      const price = bestOffer!.isPromo && bestOffer!.promoPrice ? bestOffer!.promoPrice : bestOffer!.price
+      const originalPrice = bestOffer!.price
+      const offerNormalized = normalizeToBaseUnit(bestOffer!.quantity, bestOffer!.unit)
+      const unitQuantity = offerNormalized ? offerNormalized.value : 1
+      const quantity = Math.ceil(neededQuantity / unitQuantity)
+
+      items[bestStoreIndex].items.push({
+        need,
+        offer: bestOffer!,
+        quantity,
+        totalPrice: price * quantity
+      })
+
+      items[bestStoreIndex].total += price * quantity
+      total += price * quantity
+
+      if (bestOffer!.isPromo) {
+        savings += (originalPrice - (bestOffer!.promoPrice ?? originalPrice)) * quantity
+      }
+    }
+  }
   
   // Préparer les informations des magasins
   const stores = storeIds.map(storeId => {
     const storeInfo = storeMap.get(storeId)!
     const storeItems = items.find(item => item.storeId === storeId)
+    const storeTotal = storeItems?.total || 0
+    const storeSavings = storeItems
+      ? storeItems.items.reduce((sum, item) => {
+          return sum + (item.offer.isPromo && item.offer.promoPrice
+            ? (item.offer.price - item.offer.promoPrice) * item.quantity
+            : 0)
+        }, 0)
+      : 0
     return {
       id: storeId,
       name: storeInfo.name,
       distance: storeInfo.distance,
-      total: storeItems?.total || 0,
-      savings: storeItems?.items.reduce((sum, item) => {
-        return sum + (item.offer.isPromo && item.offer.promoPrice 
-          ? (item.offer.price - item.offer.promoPrice) * item.quantity 
-          : 0)
-      }, 0) || 0
+      total: storeTotal,
+      savings: storeSavings
     }
   })
   
@@ -315,7 +335,7 @@ function evaluateCombination(
 }
 
 // Générer des recommandations
-function generateRecommendations(result: OptimizationResult, needs: ShoppingNeed[]): string[] {
+function generateRecommendations(result: Omit<OptimizationResult, 'recommendations'>, needs: ShoppingNeed[]): string[] {
   const recommendations: string[] = []
   
   // Recommandations basées sur les économies
@@ -324,7 +344,7 @@ function generateRecommendations(result: OptimizationResult, needs: ShoppingNeed
   }
   
   // Recommandations basées sur le nombre de magasins
-  if (result.stores.length > 1) {
+  if (result.stores.length > 1 && result.total > 0) {
     recommendations.push(`Visiter ${result.stores.length} magasins vous permet d'économiser ${(result.savings / result.total * 100).toFixed(1)}%`)
   }
   

@@ -31,14 +31,15 @@ export async function generateMealPlan(prompt: string) {
 }
 
 export async function analyzeNutrition(foodDescription: string) {
-  const prompt = `Analyse la valeur nutritionnelle de ce plat: "${foodDescription}". 
+  const prompt = `Analyse la valeur nutritionnelle de ce plat: "${foodDescription}".
   Réponds au format JSON avec les champs: kcal, protein (g), carbs (g), fat (g), fiber (g), sugar (g), sodium (mg).`
-  
+
   try {
+    if (!model) throw new Error('GOOGLE_API_KEY is required')
     const result = await model.generateContent(prompt)
     const response = await result.response
     const text = response.text()
-    
+
     try {
       return JSON.parse(text)
     } catch {
@@ -46,6 +47,9 @@ export async function analyzeNutrition(foodDescription: string) {
     }
   } catch (error) {
     console.error('Error analyzing nutrition:', error)
+    if (error instanceof Error && error.message === 'GOOGLE_API_KEY is required') {
+      throw error
+    }
     throw new Error('Failed to analyze nutrition')
   }
 }
