@@ -47,7 +47,7 @@ const outOfRangePlan = {
 }
 
 test('saveMealPlan avoids duplicate recipe errors', async () => {
-  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
   let upsertArgs: any
   ;(prisma as any).$transaction = async (cb: any) => {
     return cb({
@@ -61,13 +61,13 @@ test('saveMealPlan avoids duplicate recipe errors', async () => {
       menuItem: { create: async () => {} },
     })
   }
-  await route.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-01', '2024-01-02')
+  await utils.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-01', '2024-01-02')
   assert.deepEqual(upsertArgs.where, { userId_name: { userId: '1', name: 'Omelette' } })
   assert.equal(upsertArgs.create.userId, '1')
 })
 
 test('saveMealPlan processes all meals', async () => {
-  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
   const calls: string[] = []
   ;(prisma as any).$transaction = async (cb: any) => {
     return cb({
@@ -85,19 +85,20 @@ test('saveMealPlan processes all meals', async () => {
       }
     })
   }
-  await route.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-01', '2024-01-02')
+  await utils.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-01', '2024-01-02')
   assert.equal(calls.filter((c) => c === 'upsert').length, 2)
   assert.equal(calls.filter((c) => c === 'create').length, 2)
 })
 
 test('datesWithinRange flags out-of-range dates', async () => {
-  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
-  assert.equal(route.datesWithinRange(outOfRangePlan.days, '2024-01-01', '2024-01-02'), false)
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  assert.equal(utils.datesWithinRange(outOfRangePlan.days, '2024-01-01', '2024-01-02'), false)
 })
 
 test('returns 400 on invalid JSON', async () => {
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
-  route.sessionFetcher.get = async () => ({ user: { id: '1' } })
   const req = new NextRequest('http://test', {
     method: 'POST',
     body: '{not json',
@@ -108,7 +109,7 @@ test('returns 400 on invalid JSON', async () => {
 })
 
 test('mealPlanSchema accepts numeric strings', async () => {
-  const { mealPlanSchema } = await import('../../app/api/ai/generate-plan/route')
+  const { mealPlanSchema } = await import('../meal-plan')
   const result = mealPlanSchema.safeParse({
     days: [
       {
