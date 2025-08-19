@@ -1,0 +1,79 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id       String   @id @default(cuid())
+  email    String   @unique
+  username String   @unique
+  password String
+  profile  Profile?
+  plans    Plan[]
+}
+
+model Profile {
+  id           String               @id @default(cuid())
+  user         User                 @relation(fields: [userId], references: [id])
+  userId       String   @unique
+  cuisineType  String?
+  appliances   ProfileAppliance[]
+}
+
+model Appliance {
+  id       String             @id @default(cuid())
+  name     String             @unique
+  profiles ProfileAppliance[]
+}
+
+model ProfileAppliance {
+  id          String    @id @default(cuid())
+  profile     Profile   @relation(fields: [profileId], references: [id])
+  profileId   String
+  appliance   Appliance @relation(fields: [applianceId], references: [id])
+  applianceId String
+}
+
+model Recipe {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  instructions String?
+  prepTime    Int?
+  cookTime    Int?
+  servings    Int?
+  difficulty  String?
+  kcal        Float?
+  protein     Float?
+  carbs       Float?
+  fat         Float?
+  fiber       Float?
+  sugar       Float?
+  sodium      Float?
+  tags        String[]
+  category    String?
+  menuItems   MenuItem[]
+}
+
+model Plan {
+  id        String     @id @default(cuid())
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String
+  startDate DateTime
+  endDate   DateTime
+  menuItems MenuItem[]
+}
+
+model MenuItem {
+  id       String  @id @default(cuid())
+  plan     Plan    @relation(fields: [planId], references: [id])
+  planId   String
+  date     DateTime
+  mealType String
+  recipe   Recipe  @relation(fields: [recipeId], references: [id])
+  recipeId String
+}
