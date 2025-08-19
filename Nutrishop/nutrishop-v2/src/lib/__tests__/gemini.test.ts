@@ -19,6 +19,15 @@ test('parseMealPlanResponse extracts first JSON', async () => {
   assert.deepEqual(data, { days: [] })
 })
 
+test('parseMealPlanResponse handles nested JSON', async () => {
+  process.env.GOOGLE_API_KEY = 'test'
+  process.env.GEMINI_MODEL = 'test-model'
+  const { parseMealPlanResponse } = await import(modulePath)
+  const text = 'start {"a": {"b": [1, 2, {"c": 3}]}} end'
+  const data = parseMealPlanResponse(text)
+  assert.deepEqual(data, { a: { b: [1, 2, { c: 3 }] } })
+})
+
 test('analyzeNutrition parses model response', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'

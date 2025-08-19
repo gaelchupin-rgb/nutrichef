@@ -14,6 +14,7 @@ model User {
   password String
   profile  Profile?
   plans    Plan[]
+  recipes  Recipe[]
 }
 
 model Profile {
@@ -39,24 +40,28 @@ model ProfileAppliance {
 }
 
 model Recipe {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  description String?
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
   instructions String?
-  prepTime    Int?
-  cookTime    Int?
-  servings    Int?
-  difficulty  String?
-  kcal        Float?
-  protein     Float?
-  carbs       Float?
-  fat         Float?
-  fiber       Float?
-  sugar       Float?
-  sodium      Float?
-  tags        String[]
-  category    String?
-  menuItems   MenuItem[]
+  prepTime     Int?
+  cookTime     Int?
+  servings     Int?
+  difficulty   String?
+  kcal         Float?
+  protein      Float?
+  carbs        Float?
+  fat          Float?
+  fiber        Float?
+  sugar        Float?
+  sodium       Float?
+  tags         String[]
+  category     String?
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  menuItems    MenuItem[]
+
+  @@unique([userId, name])
 }
 
 model Plan {

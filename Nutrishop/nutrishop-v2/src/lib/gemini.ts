@@ -25,12 +25,31 @@ function getModel() {
 export { getModel }
 
 export function parseMealPlanResponse(text: string) {
-  const match = text.match(/(\{[\s\S]*?\}|\[[\s\S]*?\])/)
-  if (!match) {
+  const start = text.search(/[\[{]/)
+  if (start === -1) {
+    throw new Error('Invalid meal plan format')
+  }
+  const open = text[start]
+  const close = open === '{' ? '}' : ']'
+  let depth = 0
+  let end = -1
+  for (let i = start; i < text.length; i++) {
+    const char = text[i]
+    if (char === open) {
+      depth++
+    } else if (char === close) {
+      depth--
+      if (depth === 0) {
+        end = i + 1
+        break
+      }
+    }
+  }
+  if (end === -1) {
     throw new Error('Invalid meal plan format')
   }
   try {
-    return JSON.parse(match[0])
+    return JSON.parse(text.slice(start, end))
   } catch {
     throw new Error('Invalid meal plan format')
   }

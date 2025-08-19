@@ -9,6 +9,31 @@ import { z } from 'zod'
 
 export const sessionFetcher = { get: getServerSession }
 
+export const mealPlanSchema = z.object({
+  days: z.array(z.object({
+    date: z.string(),
+    meals: z.array(z.object({
+      name: z.string(),
+      description: z.string().optional(),
+      instructions: z.array(z.string()),
+      prepTime: z.coerce.number().optional(),
+      cookTime: z.coerce.number().optional(),
+      servings: z.coerce.number().optional(),
+      difficulty: z.string().optional(),
+      type: z.string(),
+      nutrition: z.object({
+        kcal: z.coerce.number(),
+        protein: z.coerce.number(),
+        carbs: z.coerce.number(),
+        fat: z.coerce.number(),
+        fiber: z.coerce.number(),
+        sugar: z.coerce.number(),
+        sodium: z.coerce.number()
+      })
+    }))
+  }))
+})
+
 export async function POST(req: NextRequest) {
   try {
     const session = await sessionFetcher.get(authOptions)
@@ -63,30 +88,6 @@ export async function POST(req: NextRequest) {
     
     // Generate meal plan
     const mealPlan = await generateMealPlan(prompt)
-    const mealPlanSchema = z.object({
-      days: z.array(z.object({
-        date: z.string(),
-        meals: z.array(z.object({
-          name: z.string(),
-          description: z.string().optional(),
-          instructions: z.array(z.string()),
-          prepTime: z.number().optional(),
-          cookTime: z.number().optional(),
-          servings: z.number().optional(),
-          difficulty: z.string().optional(),
-          type: z.string(),
-          nutrition: z.object({
-            kcal: z.number(),
-            protein: z.number(),
-            carbs: z.number(),
-            fat: z.number(),
-            fiber: z.number(),
-            sugar: z.number(),
-            sodium: z.number()
-          })
-        }))
-      }))
-    })
     const parsedPlan = mealPlanSchema.safeParse(mealPlan)
     if (!parsedPlan.success) {
       return NextResponse.json(
@@ -181,9 +182,10 @@ export async function saveMealPlan(
     for (const day of validMealPlan.days) {
       for (const meal of day.meals) {
         const recipe = await tx.recipe.upsert({
-          where: { name: meal.name },
+          where: { userId_name: { userId, name: meal.name } },
           update: {},
           create: {
+            userId,
             name: meal.name,
             description: meal.description,
             instructions: Array.isArray(meal.instructions) ? meal.instructions.join('\n') : '',
