@@ -47,21 +47,43 @@ export interface OptimizationResult {
 }
 
 // Convertir les unités en unités de base pour la comparaison
-function normalizeToBaseUnit(value: number, unit: string): { value: number; baseUnit: string } | null {
+export function normalizeToBaseUnit(
+  value: number,
+  unit: string
+): { value: number; baseUnit: string } | null {
   const normalizedUnit = unit.toLowerCase()
 
   // Poids
   if (normalizedUnit === 'kg') return { value: value * 1000, baseUnit: 'g' }
   if (normalizedUnit === 'g') return { value, baseUnit: 'g' }
   if (normalizedUnit === 'mg') return { value: value / 1000, baseUnit: 'g' }
+  if (normalizedUnit === 'lb' || normalizedUnit === 'lbs' || normalizedUnit === 'pound' || normalizedUnit === 'pounds') {
+    return { value: value * 453.592, baseUnit: 'g' }
+  }
+  if (normalizedUnit === 'oz' || normalizedUnit === 'ozs' || normalizedUnit === 'ounce' || normalizedUnit === 'ounces') {
+    return { value: value * 28.3495, baseUnit: 'g' }
+  }
 
   // Volume
-  if (normalizedUnit === 'l' || normalizedUnit === 'lt') return { value: value * 1000, baseUnit: 'ml' }
+  if (
+    normalizedUnit === 'l' ||
+    normalizedUnit === 'lt' ||
+    normalizedUnit === 'liter' ||
+    normalizedUnit === 'litre' ||
+    normalizedUnit === 'liters' ||
+    normalizedUnit === 'litres'
+  )
+    return { value: value * 1000, baseUnit: 'ml' }
   if (normalizedUnit === 'ml') return { value, baseUnit: 'ml' }
   if (normalizedUnit === 'cl') return { value: value * 10, baseUnit: 'ml' }
 
   // Unités
-  if (normalizedUnit === 'u' || normalizedUnit === 'unit' || normalizedUnit === 'pièce' || normalizedUnit === 'pcs') {
+  if (
+    normalizedUnit === 'u' ||
+    normalizedUnit === 'unit' ||
+    normalizedUnit === 'pièce' ||
+    normalizedUnit === 'pcs'
+  ) {
     return { value, baseUnit: 'unit' }
   }
 
@@ -132,6 +154,37 @@ export function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
   })
   
   return filteredOffers
+}
+
+function levenshtein(a: string, b: string): number {
+  const matrix = Array.from({ length: a.length + 1 }, () =>
+    Array(b.length + 1).fill(0)
+  )
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      )
+    }
+  }
+  return matrix[a.length][b.length]
+}
+
+function tokenize(name: string): string[] {
+  return name.toLowerCase().split(/\s+/).filter(Boolean)
+}
+
+export function namesMatch(a: string, b: string): boolean {
+  const aTokens = tokenize(a)
+  const bTokens = tokenize(b)
+  return aTokens.every((at) =>
+    bTokens.some((bt) => levenshtein(at, bt) <= 2)
+  )
 }
 
 // Trouver la meilleure combinaison de magasins
@@ -257,11 +310,7 @@ function evaluateCombination(
       const offers = storeOffers.get(storeId) || []
 
       for (const offer of offers) {
-        const offerProduct = offer.productName.toLowerCase().trim()
-        const needProduct = need.name.toLowerCase().trim()
-
-        // Correspondance simple (à améliorer avec un meilleur matching)
-        if (!offerProduct.includes(needProduct) && !needProduct.includes(offerProduct)) {
+        if (!namesMatch(need.name, offer.productName)) {
           continue
         }
 

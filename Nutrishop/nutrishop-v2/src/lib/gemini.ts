@@ -2,7 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 
 let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
 
-export function setModel(testModel: any) {
+export function setModel(
+  testModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null
+) {
   model = testModel
 }
 
