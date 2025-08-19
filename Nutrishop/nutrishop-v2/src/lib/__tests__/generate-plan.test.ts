@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { NextRequest } from 'next/server'
 import { getPrisma } from '../db'
+import { differenceInCalendarDays } from 'date-fns'
 const prisma = getPrisma()
 
 const mealPlan = {
@@ -105,12 +105,12 @@ test('returns 400 on invalid JSON', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
   utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
-  const req = new NextRequest('http://test', {
+  const req = new Request('http://test', {
     method: 'POST',
     body: '{not json',
     headers: { 'content-type': 'application/json' },
   })
-  const res = await route.POST(req)
+  const res = await route.POST(req as any)
   assert.equal(res.status, 400)
 })
 
@@ -118,12 +118,12 @@ test('returns 415 on invalid Content-Type', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
   utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
-  const req = new NextRequest('http://test', {
+  const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-01-02' }),
     headers: { 'content-type': 'text/plain' },
   })
-  const res = await route.POST(req)
+  const res = await route.POST(req as any)
   assert.equal(res.status, 415)
 })
 
@@ -131,13 +131,20 @@ test('rejects ranges longer than 30 days', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
   utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
-  const req = new NextRequest('http://test', {
+  const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-02-15' }),
     headers: { 'content-type': 'application/json' },
   })
-  const res = await route.POST(req)
+  const res = await route.POST(req as any)
   assert.equal(res.status, 400)
+})
+
+test('differenceInCalendarDays handles DST transition', () => {
+  const start = new Date('2024-03-09')
+  const end = new Date('2024-03-11')
+  const diff = differenceInCalendarDays(end, start)
+  assert.equal(diff, 2)
 })
 
 test('mealPlanSchema accepts numeric strings', async () => {
