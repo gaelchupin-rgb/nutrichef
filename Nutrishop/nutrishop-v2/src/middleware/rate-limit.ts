@@ -7,7 +7,19 @@ interface RateRecord {
 
 const WINDOW_MS = 60_000
 const MAX_REQUESTS = 5
-const store = new Map<string, RateRecord>()
+
+export const store = new Map<string, RateRecord>()
+
+function cleanup() {
+  const now = Date.now()
+  for (const [key, record] of store.entries()) {
+    if (record.expires <= now) {
+      store.delete(key)
+    }
+  }
+}
+
+setInterval(cleanup, WINDOW_MS).unref?.()
 
 function getIP(req: NextRequest) {
   return (
@@ -22,6 +34,7 @@ export function rateLimit(
   limit: number = MAX_REQUESTS,
   windowMs: number = WINDOW_MS
 ) {
+  cleanup()
   const ip = getIP(req)
   const now = Date.now()
   const record = store.get(ip)

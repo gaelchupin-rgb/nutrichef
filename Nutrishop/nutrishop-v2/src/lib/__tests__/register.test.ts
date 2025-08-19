@@ -1,6 +1,5 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { NextRequest } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getPrisma } from '../db'
 const prisma = getPrisma()
@@ -23,13 +22,15 @@ test('handles unique constraint conflicts', async () => {
   }
   ;(bcrypt as any).hash = async () => 'hashed'
 
-  const req = new NextRequest('http://test', {
+  const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify(requestBody),
     headers: { 'content-type': 'application/json' }
   })
-  const res = await POST(req)
+  const res = await POST(req as any)
   assert.equal(res.status, 400)
+  const data = await res.json()
+  assert.ok('error' in data)
 })
 
 test('normalizes email and username casing before persistence', async () => {
@@ -49,12 +50,12 @@ test('normalizes email and username casing before persistence', async () => {
   }
   ;(bcrypt as any).hash = async () => 'hashed'
 
-  const req = new NextRequest('http://test', {
+  const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify({ email: ' TeSt@Example.COM ', username: ' UsEr ', password: 'Secret1!' }),
     headers: { 'content-type': 'application/json' }
   })
-  await POST(req)
+  await POST(req as any)
   assert.equal(createArgs.data.email, 'test@example.com')
   assert.equal(createArgs.data.username, 'user')
 })
@@ -70,34 +71,40 @@ test('authorize returns null if password hash comparison fails', async () => {
 
 test('returns 400 on invalid JSON body', async () => {
   const { POST } = await import('../../app/api/auth/register/route')
-  const req = new NextRequest('http://test', {
+  const req = new Request('http://test', {
     method: 'POST',
     body: '{invalid',
     headers: { 'content-type': 'application/json' }
   })
-  const res = await POST(req)
+  const res = await POST(req as any)
   assert.equal(res.status, 400)
+  const data = await res.json()
+  assert.ok('error' in data)
 })
 
 test('returns 415 on invalid Content-Type', async () => {
   const { POST } = await import('../../app/api/auth/register/route')
-  const req = new NextRequest('http://test', {
+  const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify(requestBody),
     headers: { 'content-type': 'text/plain' }
   })
-  const res = await POST(req)
+  const res = await POST(req as any)
   assert.equal(res.status, 415)
+  const data = await res.json()
+  assert.ok('error' in data)
 })
 
 test('returns 400 on weak password', async () => {
   const { POST } = await import('../../app/api/auth/register/route')
   const weak = { ...requestBody, password: 'weakpass' }
-  const req = new NextRequest('http://test', {
+  const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify(weak),
     headers: { 'content-type': 'application/json' }
   })
-  const res = await POST(req)
+  const res = await POST(req as any)
   assert.equal(res.status, 400)
+  const data = await res.json()
+  assert.ok('error' in data)
 })

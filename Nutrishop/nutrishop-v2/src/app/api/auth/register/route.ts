@@ -21,17 +21,17 @@ export async function POST(request: NextRequest) {
   try {
     const limit = rateLimit(request)
     if (!limit.ok) {
-      return NextResponse.json({ message: 'Trop de requêtes' }, { status: 429 })
+      return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
     const contentType = request.headers.get('content-type') || ''
     if (!contentType.includes('application/json')) {
-      return NextResponse.json({ message: 'Content-Type invalide' }, { status: 415 })
+      return NextResponse.json({ error: 'Content-Type invalide' }, { status: 415 })
     }
     let json: unknown
     try {
       json = await request.json()
     } catch {
-      return NextResponse.json({ message: 'Requête JSON invalide' }, { status: 400 })
+      return NextResponse.json({ error: 'Requête JSON invalide' }, { status: 400 })
     }
     const parsed = registerSchema.safeParse(json)
     if (!parsed.success) {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       const message = passwordError
         ? 'Mot de passe invalide'
         : "Données d'inscription invalides"
-      return NextResponse.json({ message }, { status: 400 })
+      return NextResponse.json({ error: message }, { status: 400 })
     }
 
     const prisma = getPrisma()
@@ -73,21 +73,17 @@ export async function POST(request: NextRequest) {
         error.code === 'P2002'
       ) {
         return NextResponse.json(
-          { message: 'Un utilisateur avec cet email ou ce nom d\'utilisateur existe déjà' },
+          { error: "Un utilisateur avec cet email ou ce nom d'utilisateur existe déjà" },
           { status: 400 }
         )
       }
       throw error
     }
-
-    return NextResponse.json(
-      { message: 'Utilisateur créé avec succès' },
-      { status: 201 }
-    )
+    return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {
     console.error('Registration error:', error)
     return NextResponse.json(
-      { message: 'Une erreur est survenue lors de l\'inscription' },
+      { error: "Une erreur est survenue lors de l'inscription" },
       { status: 500 }
     )
   }
