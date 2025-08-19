@@ -17,7 +17,13 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email }
         })
         if (!user) return null
-        const isValid = await compare(credentials.password, user.password)
+        let isValid = false
+        try {
+          isValid = await compare(credentials.password, user.password)
+        } catch (error) {
+          console.error('Error comparing password:', error)
+          return null
+        }
         if (!isValid) return null
         return { id: user.id, email: user.email, name: user.username }
       }
@@ -26,12 +32,12 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = (user as any).id
+      if (user) token.id = user.id
       return token
     },
     async session({ session, token }) {
       if (session.user && token.id) {
-        ;(session.user as any).id = token.id as string
+        session.user.id = token.id as string
       }
       return session
     }

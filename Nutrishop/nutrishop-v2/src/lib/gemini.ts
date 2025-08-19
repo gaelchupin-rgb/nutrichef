@@ -25,16 +25,27 @@ function getModel() {
 export { getModel }
 
 export function parseMealPlanResponse(text: string) {
-  const start = text.search(/[\[{]/)
+  const cleaned = text.replace(/```(?:json)?|```/gi, '').trim()
+
+  const regexMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/)
+  if (regexMatch) {
+    try {
+      return JSON.parse(regexMatch[0])
+    } catch {
+      // fall through to manual parsing below
+    }
+  }
+
+  const start = cleaned.search(/[\[{]/)
   if (start === -1) {
     throw new Error('Invalid meal plan format')
   }
-  const open = text[start]
+  const open = cleaned[start]
   const close = open === '{' ? '}' : ']'
   let depth = 0
   let end = -1
-  for (let i = start; i < text.length; i++) {
-    const char = text[i]
+  for (let i = start; i < cleaned.length; i++) {
+    const char = cleaned[i]
     if (char === open) {
       depth++
     } else if (char === close) {
@@ -49,7 +60,7 @@ export function parseMealPlanResponse(text: string) {
     throw new Error('Invalid meal plan format')
   }
   try {
-    return JSON.parse(text.slice(start, end))
+    return JSON.parse(cleaned.slice(start, end))
   } catch {
     throw new Error('Invalid meal plan format')
   }

@@ -66,6 +66,30 @@ test('saveMealPlan avoids duplicate recipe errors', async () => {
   assert.equal(upsertArgs.create.userId, '1')
 })
 
+test('saveMealPlan processes all meals', async () => {
+  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  const calls: string[] = []
+  ;(prisma as any).$transaction = async (cb: any) => {
+    return cb({
+      plan: { create: async () => ({ id: 1 }) },
+      recipe: {
+        upsert: async () => {
+          calls.push('upsert')
+          return { id: 1 }
+        }
+      },
+      menuItem: {
+        create: async () => {
+          calls.push('create')
+        }
+      }
+    })
+  }
+  await route.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-01', '2024-01-02')
+  assert.equal(calls.filter((c) => c === 'upsert').length, 2)
+  assert.equal(calls.filter((c) => c === 'create').length, 2)
+})
+
 test('datesWithinRange flags out-of-range dates', async () => {
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   assert.equal(route.datesWithinRange(outOfRangePlan.days, '2024-01-01', '2024-01-02'), false)
