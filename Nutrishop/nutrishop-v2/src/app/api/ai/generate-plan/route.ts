@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { getPrisma } from '@/lib/db'
 import { generateMealPlan } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates, isValidDate } from '@/lib/date-utils'
@@ -12,8 +12,21 @@ import {
   saveMealPlan,
 } from '@/lib/meal-plan'
 
+const requestSchema = z.object({
+  startDate: z.string().refine(isValidDate, {
+    message: 'Invalid startDate'
+  }),
+  endDate: z.string().refine(isValidDate, {
+    message: 'Invalid endDate'
+  })
+})
+
 export async function POST(req: NextRequest) {
   try {
+    const contentType = req.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      return NextResponse.json({ error: 'Unsupported Media Type' }, { status: 415 })
+    }
     const session = await sessionFetcher.get(authOptions)
     const userId = (session?.user as { id: string } | undefined)?.id
 
@@ -27,15 +40,7 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
-      const schema = z.object({
-        startDate: z.string().refine(isValidDate, {
-          message: 'Invalid startDate'
-        }),
-        endDate: z.string().refine(isValidDate, {
-          message: 'Invalid endDate'
-        })
-      })
-    const parsed = schema.safeParse(body)
+    const parsed = requestSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
     }
@@ -53,6 +58,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user profile
+    const prisma = getPrisma()
     const profile = await prisma.profile.findUnique({
       where: { userId },
       include: {

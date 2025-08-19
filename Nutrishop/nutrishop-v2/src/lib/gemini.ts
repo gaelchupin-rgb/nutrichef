@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { z } from 'zod'
+import extract from 'extract-json-from-string'
+import { jsonrepair } from 'jsonrepair'
 
 let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
 
@@ -30,59 +32,27 @@ export { getModel }
 export function parseMealPlanResponse(text: string) {
   const cleaned = text.replace(/```(?:json)?|```/gi, '').trim()
 
-  let start = -1
-  let end = -1
-  let depth = 0
-  let inString = false
-  let escape = false
-  let open = ''
-  let close = ''
-
-  for (let i = 0; i < cleaned.length; i++) {
-    const char = cleaned[i]
-    if (start === -1) {
-      if (char === '{' || char === '[') {
-        start = i
-        open = char
-        close = char === '{' ? '}' : ']'
-        depth = 1
-      }
-      continue
-    }
-
-    if (escape) {
-      escape = false
-      continue
-    }
-    if (char === '\\') {
-      escape = true
-      continue
-    }
-    if (char === '"') {
-      inString = !inString
-      continue
-    }
-    if (inString) continue
-
-    if (char === open) depth++
-    else if (char === close) {
-      depth--
-      if (depth === 0) {
-        end = i + 1
-        break
-      }
-    }
+  const extracted = extract(cleaned)
+  if (Array.isArray(extracted) && extracted.length > 0) {
+    return extracted[0]
   }
 
-  if (start === -1 || end === -1) {
-    throw new Error('Invalid meal plan format')
+  const startObj = cleaned.indexOf('{')
+  const endObj = cleaned.lastIndexOf('}')
+  if (startObj !== -1 && endObj !== -1) {
+    try {
+      return JSON.parse(jsonrepair(cleaned.slice(startObj, endObj + 1)))
+    } catch {}
+  }
+  const startArr = cleaned.indexOf('[')
+  const endArr = cleaned.lastIndexOf(']')
+  if (startArr !== -1 && endArr !== -1) {
+    try {
+      return JSON.parse(jsonrepair(cleaned.slice(startArr, endArr + 1)))
+    } catch {}
   }
 
-  try {
-    return JSON.parse(cleaned.slice(start, end))
-  } catch {
-    throw new Error('Invalid meal plan format')
-  }
+  throw new Error('Invalid meal plan format')
 }
 
 export async function generateMealPlan(prompt: string) {

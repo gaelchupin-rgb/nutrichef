@@ -110,7 +110,7 @@ export function normalizeToBaseUnit(
   value: number,
   unit: string
 ): { value: number; baseUnit: string } | null {
-  const normalizedUnit = unit.toLowerCase()
+  const normalizedUnit = unit.trim().toLowerCase()
 
   if (normalizedUnit in weightUnits) {
     return { value: value * weightUnits[normalizedUnit], baseUnit: 'g' }
@@ -124,6 +124,7 @@ export function normalizeToBaseUnit(
     return { value, baseUnit: 'unit' }
   }
 
+  console.warn(`Unknown unit: ${unit}`)
   return null
 }
 

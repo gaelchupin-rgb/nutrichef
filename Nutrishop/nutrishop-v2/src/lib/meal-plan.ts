@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/db'
+import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { isValidDate } from '@/lib/date-utils'
 
@@ -83,6 +83,7 @@ export async function saveMealPlan(
   startDate: string,
   endDate: string
 ) {
+  const prisma = getPrisma()
   return prisma.$transaction(async (tx) => {
     const plan = await tx.plan.create({
       data: {

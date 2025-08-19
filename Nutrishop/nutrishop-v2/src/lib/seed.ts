@@ -1,4 +1,5 @@
-import { prisma } from './db'
+import { getPrisma } from './db'
+const prisma = getPrisma()
 import bcrypt from 'bcryptjs'
 
 async function main() {

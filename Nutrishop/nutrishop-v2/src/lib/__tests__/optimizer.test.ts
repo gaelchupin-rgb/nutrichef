@@ -95,6 +95,12 @@ test('normalizeToBaseUnit converts various units', () => {
   assert.equal(pcs.value, 3)
 })
 
+test('normalizeToBaseUnit trims whitespace', () => {
+  const kg = normalizeToBaseUnit(1, ' kg ')!
+  assert.equal(kg.baseUnit, 'g')
+  assert.equal(kg.value, 1000)
+})
+
 test('namesMatch handles token order and minor differences', () => {
   assert.ok(namesMatch('tomato sauce', 'sauce tomate'))
   assert.ok(!namesMatch('tomato sauce', 'apple'))

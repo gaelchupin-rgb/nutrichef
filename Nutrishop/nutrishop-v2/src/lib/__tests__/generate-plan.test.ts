@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { NextRequest } from 'next/server'
-import { prisma } from '../db'
+import { getPrisma } from '../db'
+const prisma = getPrisma()
 
 const mealPlan = {
   days: [
@@ -111,6 +112,19 @@ test('returns 400 on invalid JSON', async () => {
   })
   const res = await route.POST(req)
   assert.equal(res.status, 400)
+})
+
+test('returns 415 on invalid Content-Type', async () => {
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  const req = new NextRequest('http://test', {
+    method: 'POST',
+    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-01-02' }),
+    headers: { 'content-type': 'text/plain' },
+  })
+  const res = await route.POST(req)
+  assert.equal(res.status, 415)
 })
 
 test('rejects ranges longer than 30 days', async () => {
