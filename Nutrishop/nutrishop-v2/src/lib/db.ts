@@ -20,3 +20,14 @@ export function getPrisma() {
 export const prisma = getPrisma()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+const disconnect = async () => {
+  try {
+    await prisma.$disconnect()
+  } catch (error) {
+    console.error('Error disconnecting Prisma', error)
+  }
+}
+
+process.once('beforeExit', disconnect)
+process.once('SIGTERM', disconnect)
