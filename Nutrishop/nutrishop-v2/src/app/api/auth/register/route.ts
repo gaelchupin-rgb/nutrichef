@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
+import { z } from 'zod'
+
+const registerSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(3),
+  password: z.string().min(6),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1)
+})
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, username, password, firstName, lastName } = await request.json()
+    const json = await request.json()
+    const parsed = registerSchema.safeParse(json)
+    if (!parsed.success) {
+      return NextResponse.json({ message: 'Données d\'inscription invalides' }, { status: 400 })
+    }
+
+    const { email, username, password, firstName, lastName } = parsed.data
 
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
