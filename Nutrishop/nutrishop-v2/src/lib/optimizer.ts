@@ -47,99 +47,83 @@ export interface OptimizationResult {
 }
 
 // Convertir les unités en unités de base pour la comparaison
+const weightUnits: Record<string, number> = {
+  kg: 1000,
+  kgs: 1000,
+  kilogram: 1000,
+  kilograms: 1000,
+  kilogramme: 1000,
+  kilogrammes: 1000,
+  kilo: 1000,
+  kilos: 1000,
+  g: 1,
+  gram: 1,
+  grams: 1,
+  gramme: 1,
+  grammes: 1,
+  mg: 1 / 1000,
+  milligram: 1 / 1000,
+  milligrams: 1 / 1000,
+  milligramme: 1 / 1000,
+  milligrammes: 1 / 1000,
+  lb: 453.592,
+  lbs: 453.592,
+  pound: 453.592,
+  pounds: 453.592,
+  oz: 28.3495,
+  ozs: 28.3495,
+  ounce: 28.3495,
+  ounces: 28.3495,
+}
+
+const volumeUnits: Record<string, number> = {
+  l: 1000,
+  lt: 1000,
+  liter: 1000,
+  litre: 1000,
+  liters: 1000,
+  litres: 1000,
+  ml: 1,
+  milliliter: 1,
+  milliliters: 1,
+  millilitre: 1,
+  millilitres: 1,
+  cl: 10,
+  centiliter: 10,
+  centiliters: 10,
+  centilitre: 10,
+  centilitres: 10,
+}
+
+const unitUnits = new Set([
+  'u',
+  'unit',
+  'units',
+  'pièce',
+  'pièces',
+  'piece',
+  'pieces',
+  'pcs',
+])
+
 export function normalizeToBaseUnit(
   value: number,
   unit: string
 ): { value: number; baseUnit: string } | null {
   const normalizedUnit = unit.toLowerCase()
 
-  // Poids
-  if (
-    normalizedUnit === 'kg' ||
-    normalizedUnit === 'kgs' ||
-    normalizedUnit === 'kilogram' ||
-    normalizedUnit === 'kilograms' ||
-    normalizedUnit === 'kilogramme' ||
-    normalizedUnit === 'kilogrammes' ||
-    normalizedUnit === 'kilo' ||
-    normalizedUnit === 'kilos'
-  )
-    return { value: value * 1000, baseUnit: 'g' }
-  if (
-    normalizedUnit === 'g' ||
-    normalizedUnit === 'gram' ||
-    normalizedUnit === 'grams' ||
-    normalizedUnit === 'gramme' ||
-    normalizedUnit === 'grammes'
-  )
-    return { value, baseUnit: 'g' }
-  if (
-    normalizedUnit === 'mg' ||
-    normalizedUnit === 'milligram' ||
-    normalizedUnit === 'milligrams' ||
-    normalizedUnit === 'milligramme' ||
-    normalizedUnit === 'milligrammes'
-  )
-    return { value: value / 1000, baseUnit: 'g' }
-  if (
-    normalizedUnit === 'lb' ||
-    normalizedUnit === 'lbs' ||
-    normalizedUnit === 'pound' ||
-    normalizedUnit === 'pounds'
-  ) {
-    return { value: value * 453.592, baseUnit: 'g' }
-  }
-  if (
-    normalizedUnit === 'oz' ||
-    normalizedUnit === 'ozs' ||
-    normalizedUnit === 'ounce' ||
-    normalizedUnit === 'ounces'
-  ) {
-    return { value: value * 28.3495, baseUnit: 'g' }
+  if (normalizedUnit in weightUnits) {
+    return { value: value * weightUnits[normalizedUnit], baseUnit: 'g' }
   }
 
-  // Volume
-  if (
-    normalizedUnit === 'l' ||
-    normalizedUnit === 'lt' ||
-    normalizedUnit === 'liter' ||
-    normalizedUnit === 'litre' ||
-    normalizedUnit === 'liters' ||
-    normalizedUnit === 'litres'
-  )
-    return { value: value * 1000, baseUnit: 'ml' }
-  if (
-    normalizedUnit === 'ml' ||
-    normalizedUnit === 'milliliter' ||
-    normalizedUnit === 'milliliters' ||
-    normalizedUnit === 'millilitre' ||
-    normalizedUnit === 'millilitres'
-  )
-    return { value, baseUnit: 'ml' }
-  if (
-    normalizedUnit === 'cl' ||
-    normalizedUnit === 'centiliter' ||
-    normalizedUnit === 'centiliters' ||
-    normalizedUnit === 'centilitre' ||
-    normalizedUnit === 'centilitres'
-  )
-    return { value: value * 10, baseUnit: 'ml' }
+  if (normalizedUnit in volumeUnits) {
+    return { value: value * volumeUnits[normalizedUnit], baseUnit: 'ml' }
+  }
 
-  // Unités
-  if (
-    normalizedUnit === 'u' ||
-    normalizedUnit === 'unit' ||
-    normalizedUnit === 'units' ||
-    normalizedUnit === 'pièce' ||
-    normalizedUnit === 'pièces' ||
-    normalizedUnit === 'piece' ||
-    normalizedUnit === 'pieces' ||
-    normalizedUnit === 'pcs'
-  ) {
+  if (unitUnits.has(normalizedUnit)) {
     return { value, baseUnit: 'unit' }
   }
 
-  // Unité non reconnue
   return null
 }
 

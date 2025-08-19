@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { generateMealPlan } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
-import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
+import { isValidDateRange, hasValidMealDates, isValidDate } from '@/lib/date-utils'
 import { z } from 'zod'
 import {
   sessionFetcher,
@@ -27,14 +27,14 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
-    const schema = z.object({
-      startDate: z.string().refine((d) => !isNaN(Date.parse(d)), {
-        message: 'Invalid startDate'
-      }),
-      endDate: z.string().refine((d) => !isNaN(Date.parse(d)), {
-        message: 'Invalid endDate'
+      const schema = z.object({
+        startDate: z.string().refine(isValidDate, {
+          message: 'Invalid startDate'
+        }),
+        endDate: z.string().refine(isValidDate, {
+          message: 'Invalid endDate'
+        })
       })
-    })
     const parsed = schema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
