@@ -73,9 +73,21 @@ test('normalizeToBaseUnit converts imperial and litre units', () => {
   const litre = normalizeToBaseUnit(2, 'Litres')!
   assert.equal(litre.baseUnit, 'ml')
   assert.equal(litre.value, 2000)
+
+  const kilo = normalizeToBaseUnit(1, 'kilogrammes')!
+  assert.equal(kilo.baseUnit, 'g')
+  assert.equal(kilo.value, 1000)
+
+  const ml = normalizeToBaseUnit(500, 'milliliters')!
+  assert.equal(ml.baseUnit, 'ml')
+  assert.equal(ml.value, 500)
 })
 
 test('namesMatch handles token order and minor differences', () => {
   assert.ok(namesMatch('tomato sauce', 'sauce tomate'))
   assert.ok(!namesMatch('tomato sauce', 'apple'))
+})
+
+test('namesMatch requires bidirectional token matches', () => {
+  assert.ok(!namesMatch('sauce tomate', 'tomate'))
 })

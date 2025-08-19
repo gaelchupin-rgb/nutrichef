@@ -54,13 +54,47 @@ export function normalizeToBaseUnit(
   const normalizedUnit = unit.toLowerCase()
 
   // Poids
-  if (normalizedUnit === 'kg') return { value: value * 1000, baseUnit: 'g' }
-  if (normalizedUnit === 'g') return { value, baseUnit: 'g' }
-  if (normalizedUnit === 'mg') return { value: value / 1000, baseUnit: 'g' }
-  if (normalizedUnit === 'lb' || normalizedUnit === 'lbs' || normalizedUnit === 'pound' || normalizedUnit === 'pounds') {
+  if (
+    normalizedUnit === 'kg' ||
+    normalizedUnit === 'kgs' ||
+    normalizedUnit === 'kilogram' ||
+    normalizedUnit === 'kilograms' ||
+    normalizedUnit === 'kilogramme' ||
+    normalizedUnit === 'kilogrammes' ||
+    normalizedUnit === 'kilo' ||
+    normalizedUnit === 'kilos'
+  )
+    return { value: value * 1000, baseUnit: 'g' }
+  if (
+    normalizedUnit === 'g' ||
+    normalizedUnit === 'gram' ||
+    normalizedUnit === 'grams' ||
+    normalizedUnit === 'gramme' ||
+    normalizedUnit === 'grammes'
+  )
+    return { value, baseUnit: 'g' }
+  if (
+    normalizedUnit === 'mg' ||
+    normalizedUnit === 'milligram' ||
+    normalizedUnit === 'milligrams' ||
+    normalizedUnit === 'milligramme' ||
+    normalizedUnit === 'milligrammes'
+  )
+    return { value: value / 1000, baseUnit: 'g' }
+  if (
+    normalizedUnit === 'lb' ||
+    normalizedUnit === 'lbs' ||
+    normalizedUnit === 'pound' ||
+    normalizedUnit === 'pounds'
+  ) {
     return { value: value * 453.592, baseUnit: 'g' }
   }
-  if (normalizedUnit === 'oz' || normalizedUnit === 'ozs' || normalizedUnit === 'ounce' || normalizedUnit === 'ounces') {
+  if (
+    normalizedUnit === 'oz' ||
+    normalizedUnit === 'ozs' ||
+    normalizedUnit === 'ounce' ||
+    normalizedUnit === 'ounces'
+  ) {
     return { value: value * 28.3495, baseUnit: 'g' }
   }
 
@@ -74,14 +108,32 @@ export function normalizeToBaseUnit(
     normalizedUnit === 'litres'
   )
     return { value: value * 1000, baseUnit: 'ml' }
-  if (normalizedUnit === 'ml') return { value, baseUnit: 'ml' }
-  if (normalizedUnit === 'cl') return { value: value * 10, baseUnit: 'ml' }
+  if (
+    normalizedUnit === 'ml' ||
+    normalizedUnit === 'milliliter' ||
+    normalizedUnit === 'milliliters' ||
+    normalizedUnit === 'millilitre' ||
+    normalizedUnit === 'millilitres'
+  )
+    return { value, baseUnit: 'ml' }
+  if (
+    normalizedUnit === 'cl' ||
+    normalizedUnit === 'centiliter' ||
+    normalizedUnit === 'centiliters' ||
+    normalizedUnit === 'centilitre' ||
+    normalizedUnit === 'centilitres'
+  )
+    return { value: value * 10, baseUnit: 'ml' }
 
   // Unités
   if (
     normalizedUnit === 'u' ||
     normalizedUnit === 'unit' ||
+    normalizedUnit === 'units' ||
     normalizedUnit === 'pièce' ||
+    normalizedUnit === 'pièces' ||
+    normalizedUnit === 'piece' ||
+    normalizedUnit === 'pieces' ||
     normalizedUnit === 'pcs'
   ) {
     return { value, baseUnit: 'unit' }
@@ -182,8 +234,9 @@ function tokenize(name: string): string[] {
 export function namesMatch(a: string, b: string): boolean {
   const aTokens = tokenize(a)
   const bTokens = tokenize(b)
-  return aTokens.every((at) =>
-    bTokens.some((bt) => levenshtein(at, bt) <= 2)
+  return (
+    aTokens.every((at) => bTokens.some((bt) => levenshtein(at, bt) <= 2)) &&
+    bTokens.every((bt) => aTokens.some((at) => levenshtein(bt, at) <= 2))
   )
 }
 

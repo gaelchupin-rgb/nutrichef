@@ -27,24 +27,8 @@ export async function POST(request: NextRequest) {
     }
 
     const email = parsed.data.email.toLowerCase()
-    const { username, password } = parsed.data
-
-    // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { username }
-        ]
-      }
-    })
-
-    if (existingUser) {
-      return NextResponse.json(
-        { message: 'Un utilisateur avec cet email ou ce nom d\'utilisateur existe déjà' },
-        { status: 400 }
-      )
-    }
+    const username = parsed.data.username.toLowerCase()
+    const { password } = parsed.data
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
@@ -52,20 +36,20 @@ export async function POST(request: NextRequest) {
     // Create user and profile atomically
     try {
       await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          email,
-          username,
-          password: hashedPassword,
-        }
-      })
+        const user = await tx.user.create({
+          data: {
+            email,
+            username,
+            password: hashedPassword,
+          }
+        })
 
-      await tx.profile.create({
-        data: {
-          userId: user.id,
-        }
+        await tx.profile.create({
+          data: {
+            userId: user.id,
+          }
+        })
       })
-    })
     } catch (error) {
       if (error instanceof Error && (error as any).code === 'P2002') {
         return NextResponse.json(

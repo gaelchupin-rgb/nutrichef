@@ -95,6 +95,11 @@ test('datesWithinRange flags out-of-range dates', async () => {
   assert.equal(utils.datesWithinRange(outOfRangePlan.days, '2024-01-01', '2024-01-02'), false)
 })
 
+test('datesWithinRange rejects invalid dates', async () => {
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  assert.equal(utils.datesWithinRange([{ date: 'invalid' }], '2024-01-01', '2024-01-02'), false)
+})
+
 test('returns 400 on invalid JSON', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
   utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
@@ -102,6 +107,19 @@ test('returns 400 on invalid JSON', async () => {
   const req = new NextRequest('http://test', {
     method: 'POST',
     body: '{not json',
+    headers: { 'content-type': 'application/json' },
+  })
+  const res = await route.POST(req)
+  assert.equal(res.status, 400)
+})
+
+test('rejects ranges longer than 30 days', async () => {
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  const req = new NextRequest('http://test', {
+    method: 'POST',
+    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-02-15' }),
     headers: { 'content-type': 'application/json' },
   })
   const res = await route.POST(req)

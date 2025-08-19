@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { z } from 'zod'
 
 let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
 
@@ -29,28 +30,42 @@ export { getModel }
 export function parseMealPlanResponse(text: string) {
   const cleaned = text.replace(/```(?:json)?|```/gi, '').trim()
 
-  const regexMatch = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/)
-  if (regexMatch) {
-    try {
-      return JSON.parse(regexMatch[0])
-    } catch {
-      // fall through to manual parsing below
-    }
-  }
-
-  const start = cleaned.search(/[\[{]/)
-  if (start === -1) {
-    throw new Error('Invalid meal plan format')
-  }
-  const open = cleaned[start]
-  const close = open === '{' ? '}' : ']'
-  let depth = 0
+  let start = -1
   let end = -1
-  for (let i = start; i < cleaned.length; i++) {
+  let depth = 0
+  let inString = false
+  let escape = false
+  let open = ''
+  let close = ''
+
+  for (let i = 0; i < cleaned.length; i++) {
     const char = cleaned[i]
-    if (char === open) {
-      depth++
-    } else if (char === close) {
+    if (start === -1) {
+      if (char === '{' || char === '[') {
+        start = i
+        open = char
+        close = char === '{' ? '}' : ']'
+        depth = 1
+      }
+      continue
+    }
+
+    if (escape) {
+      escape = false
+      continue
+    }
+    if (char === '\\') {
+      escape = true
+      continue
+    }
+    if (char === '"') {
+      inString = !inString
+      continue
+    }
+    if (inString) continue
+
+    if (char === open) depth++
+    else if (char === close) {
       depth--
       if (depth === 0) {
         end = i + 1
@@ -58,9 +73,11 @@ export function parseMealPlanResponse(text: string) {
       }
     }
   }
-  if (end === -1) {
+
+  if (start === -1 || end === -1) {
     throw new Error('Invalid meal plan format')
   }
+
   try {
     return JSON.parse(cleaned.slice(start, end))
   } catch {
@@ -83,6 +100,16 @@ export async function generateMealPlan(prompt: string) {
   }
 }
 
+const nutritionSchema = z.object({
+  kcal: z.number(),
+  protein: z.number(),
+  carbs: z.number(),
+  fat: z.number(),
+  fiber: z.number(),
+  sugar: z.number(),
+  sodium: z.number(),
+})
+
 export async function analyzeNutrition(foodDescription: string) {
   const prompt =
     `Analyse la valeur nutritionnelle de ce plat: "${foodDescription}". ` +
@@ -93,13 +120,22 @@ export async function analyzeNutrition(foodDescription: string) {
     const response = await result.response
     const text = response.text()
 
+    let data: unknown
     try {
-      return parseMealPlanResponse(text)
+      data = parseMealPlanResponse(text)
     } catch {
       throw new Error('Invalid nutrition analysis format')
     }
+    const parsed = nutritionSchema.safeParse(data)
+    if (!parsed.success) {
+      throw new Error('Invalid nutrition analysis format')
+    }
+    return parsed.data
   } catch (error) {
     console.error('Error analyzing nutrition:', error)
+    if (error instanceof Error && error.message === 'Invalid nutrition analysis format') {
+      throw error
+    }
     throw new Error('Failed to analyze nutrition')
   }
 }
