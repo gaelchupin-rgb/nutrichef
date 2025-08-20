@@ -2,9 +2,13 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { getPrisma } from './db'
 import { compare } from 'bcryptjs'
+import { z } from 'zod'
 
-export async function authorize(credentials: any) {
-  if (!credentials?.email || !credentials?.password) return null
+const credentialsSchema = z.object({
+  email: z.string(),
+  password: z.string()
+})
+export async function authorize(credentials: { email: string; password: string }) {
   const prisma = getPrisma()
   const email = credentials.email.trim().toLowerCase()
   const user = await prisma.user.findUnique({
@@ -30,7 +34,11 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
-      authorize
+      async authorize(rawCredentials) {
+        const parsed = credentialsSchema.safeParse(rawCredentials)
+        if (!parsed.success) return null
+        return authorize(parsed.data)
+      }
     })
   ],
   session: { strategy: 'jwt' },

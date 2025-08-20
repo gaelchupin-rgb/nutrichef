@@ -39,7 +39,11 @@ export async function POST(req: NextRequest) {
     if (!session || !userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
+    const maxBody = 1_000_000
+    const length = req.headers.get('content-length')
+    if (length && Number(length) > maxBody) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+    }
     let body: unknown
     try {
       body = await req.json()

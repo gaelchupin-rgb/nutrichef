@@ -10,7 +10,7 @@ const MAX_REQUESTS = 5
 
 export const store = new Map<string, RateRecord>()
 
-function cleanup() {
+export function cleanup() {
   const now = Date.now()
   for (const [key, record] of store.entries()) {
     if (record.expires <= now) {
@@ -40,7 +40,6 @@ export function rateLimit(
   limit: number = MAX_REQUESTS,
   windowMs: number = WINDOW_MS
 ) {
-  cleanup()
   const ip = getIP(req)
   const now = Date.now()
   const record = store.get(ip)

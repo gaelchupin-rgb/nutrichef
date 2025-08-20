@@ -82,7 +82,7 @@ test('authorize normalizes email casing', async () => {
   }
   ;(bcrypt as any).compare = async () => true
   const { authorize } = await import(`../auth?t=${Date.now()}`)
-  const result = await authorize({ email: ' A@A.COM ', password: 'pw' } as any)
+  const result = await authorize({ email: ' A@A.COM ', password: 'pw' })
   assert.deepEqual(result, { id: '1', email: 'a@a.com', name: 'user' })
 })
 
