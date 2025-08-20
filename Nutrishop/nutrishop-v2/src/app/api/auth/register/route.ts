@@ -24,7 +24,7 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const limit = rateLimit(request)
+    const limit = await rateLimit(request)
     if (!limit.ok) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { fetchJson } from '@/lib/fetch-json'
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ email: '', username: '', password: '' })
@@ -14,19 +15,14 @@ export default function RegisterPage() {
     e.preventDefault()
     setMessage(null)
     try {
-      const res = await fetch('/api/auth/register', {
+      await fetchJson('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       })
-      const data = await res.json()
-      if (!res.ok) {
-        setMessage(data.error || 'Erreur inconnue')
-      } else {
-        setMessage('Inscription réussie')
-      }
+      setMessage('Inscription réussie')
     } catch (err) {
-      setMessage('Erreur réseau')
+      setMessage(err instanceof Error ? err.message : 'Erreur inconnue')
     }
   }
 
