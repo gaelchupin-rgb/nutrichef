@@ -10,6 +10,8 @@ export interface MealPlanProfile {
 
 export const sessionFetcher = { get: getServerSession }
 
+export const mealTypes = ['breakfast', 'lunch', 'dinner'] as const
+
 export const mealPlanSchema = z.object({
   days: z.array(
     z.object({
@@ -23,7 +25,7 @@ export const mealPlanSchema = z.object({
           cookTime: z.coerce.number().optional(),
           servings: z.coerce.number().optional(),
           difficulty: z.string().optional(),
-          type: z.string(),
+          type: z.enum(mealTypes),
           nutrition: z.object({
             kcal: z.coerce.number(),
             protein: z.coerce.number(),
@@ -66,7 +68,7 @@ export async function saveMealPlan(
         cookTime?: number
         servings?: number
         difficulty?: string
-        type: string
+        type: (typeof mealTypes)[number]
         nutrition: {
           kcal: number
           protein: number

@@ -26,12 +26,13 @@ setInterval(cleanup, WINDOW_MS).unref?.()
  * Falls back to 127.0.0.1 when no information is available.
  */
 function getIP(req: NextRequest) {
-  return (
+  const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     req.headers.get('x-real-ip')?.trim() ||
-    (typeof (req as any).ip === 'string' ? (req as any).ip.trim() : (req as any).ip) ||
+    (req as any).ip ||
     '127.0.0.1'
-  )
+
+  return String(ip).trim()
 }
 
 export function rateLimit(
