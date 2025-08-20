@@ -5,8 +5,8 @@ import { compare } from 'bcryptjs'
 import { z } from 'zod'
 
 const credentialsSchema = z.object({
-  email: z.string(),
-  password: z.string()
+  email: z.string().trim().email(),
+  password: z.string().min(8),
 })
 export async function authorize(credentials: { email: string; password: string }) {
   const prisma = getPrisma()

@@ -137,7 +137,7 @@ test('returns 413 on payload too large', async () => {
     body: large,
     headers: {
       'content-type': 'application/json',
-      'content-length': String(large.length),
+      'content-length': '10',
       'x-real-ip': '203.0.113.10'
     }
   })

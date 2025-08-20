@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { isIP } from 'node:net'
 
 interface RateRecord {
   count: number
@@ -26,13 +27,16 @@ setInterval(cleanup, WINDOW_MS).unref?.()
  * Falls back to 127.0.0.1 when no information is available.
  */
 function getIP(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip')?.trim() ||
-    (req as any).ip ||
-    '127.0.0.1'
+  const candidates = [
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
+    req.headers.get('x-real-ip')?.trim(),
+    (req as any).ip,
+  ]
 
-  return String(ip).trim()
+  for (const ip of candidates) {
+    if (ip && isIP(ip)) return ip
+  }
+  return '127.0.0.1'
 }
 
 export function rateLimit(

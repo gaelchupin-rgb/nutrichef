@@ -13,6 +13,11 @@ import {
   saveMealPlan,
 } from '@/lib/meal-plan'
 import { rateLimit } from '@/middleware/rate-limit'
+import {
+  readJsonBody,
+  PayloadTooLargeError,
+  InvalidJsonError,
+} from '@/lib/request'
 
 const requestSchema = z.object({
   startDate: z.string().refine(isValidDate, {
@@ -40,15 +45,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const maxBody = 1_000_000
-    const length = req.headers.get('content-length')
-    if (length && Number(length) > maxBody) {
-      return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
-    }
     let body: unknown
     try {
-      body = await req.json()
-    } catch {
-      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+      body = await readJsonBody(req, maxBody)
+    } catch (err) {
+      if (err instanceof PayloadTooLargeError) {
+        return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+      }
+      if (err instanceof InvalidJsonError) {
+        return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+      }
+      throw err
     }
     const parsed = requestSchema.safeParse(body)
     if (!parsed.success) {

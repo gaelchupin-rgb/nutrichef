@@ -62,6 +62,13 @@ test('parseMealPlanResponse rejects non-object JSON', async () => {
   assert.throws(() => parseMealPlanResponse('42'), /Invalid meal plan format/)
 })
 
+test('parseMealPlanResponse rejects arrays', async () => {
+  process.env.GOOGLE_API_KEY = 'test'
+  process.env.GEMINI_MODEL = 'test-model'
+  const { parseMealPlanResponse } = await import(modulePath)
+  assert.throws(() => parseMealPlanResponse('[1,2,3]'), /Invalid meal plan format/)
+})
+
 test('analyzeNutrition parses model response', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'

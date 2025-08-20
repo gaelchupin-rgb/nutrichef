@@ -4,6 +4,11 @@ import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { rateLimit } from '@/middleware/rate-limit'
+import {
+  readJsonBody,
+  PayloadTooLargeError,
+  InvalidJsonError,
+} from '@/lib/request'
 
 const registerSchema = z.object({
   email: z.string().trim().email(),
@@ -27,11 +32,18 @@ export async function POST(request: NextRequest) {
     if (!contentType.includes('application/json')) {
       return NextResponse.json({ error: 'Content-Type invalide' }, { status: 415 })
     }
+    const maxBody = 1_000_000
     let json: unknown
     try {
-      json = await request.json()
-    } catch {
-      return NextResponse.json({ error: 'Requête JSON invalide' }, { status: 400 })
+      json = await readJsonBody(request, maxBody)
+    } catch (err) {
+      if (err instanceof PayloadTooLargeError) {
+        return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+      }
+      if (err instanceof InvalidJsonError) {
+        return NextResponse.json({ error: 'Requête JSON invalide' }, { status: 400 })
+      }
+      throw err
     }
     const parsed = registerSchema.safeParse(json)
     if (!parsed.success) {
