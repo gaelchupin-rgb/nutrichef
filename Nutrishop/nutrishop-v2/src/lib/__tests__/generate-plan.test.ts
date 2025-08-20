@@ -127,13 +127,42 @@ test('returns 415 on invalid Content-Type', async () => {
   assert.equal(res.status, 415)
 })
 
+test('allows ranges up to 30 days', async () => {
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  const gemini = await import(`../gemini?t=${Date.now()}`)
+  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  ;(prisma as any).profile = {
+    findUnique: async () => ({ cuisineType: null, appliances: [] }),
+  }
+  ;(prisma as any).$transaction = async (cb: any) => {
+    return cb({
+      plan: { create: async () => ({ id: 1 }) },
+      recipe: { upsert: async () => ({ id: 1 }) },
+      menuItem: { create: async () => {} },
+    })
+  }
+  ;(gemini as any).setModel({
+    generateContent: async () => ({
+      response: { text: () => JSON.stringify(mealPlan) },
+    }),
+  })
+  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  const req = new Request('http://test', {
+    method: 'POST',
+    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-01-30' }),
+    headers: { 'content-type': 'application/json' },
+  })
+  const res = await route.POST(req as any)
+  assert.equal(res.status, 200)
+})
+
 test('rejects ranges longer than 30 days', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
   utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',
-    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-02-15' }),
+    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-01-31' }),
     headers: { 'content-type': 'application/json' },
   })
   const res = await route.POST(req as any)

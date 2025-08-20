@@ -31,3 +31,4 @@ const disconnect = async () => {
 
 process.once('beforeExit', disconnect)
 process.once('SIGTERM', disconnect)
+process.once('SIGINT', disconnect)

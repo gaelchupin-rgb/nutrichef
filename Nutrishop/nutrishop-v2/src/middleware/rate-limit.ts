@@ -27,9 +27,9 @@ setInterval(cleanup, WINDOW_MS).unref?.()
  */
 function getIP(req: NextRequest) {
   return (
-    req.headers.get('x-forwarded-for')?.split(',')[0] ||
-    req.headers.get('x-real-ip') ||
-    (req as any).ip ||
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip')?.trim() ||
+    (typeof (req as any).ip === 'string' ? (req as any).ip.trim() : (req as any).ip) ||
     '127.0.0.1'
   )
 }
