@@ -127,6 +127,24 @@ test('returns 415 on invalid Content-Type', async () => {
   assert.equal(res.status, 415)
 })
 
+test('returns 413 on payload too large', async () => {
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  const large = 'a'.repeat(1_000_001)
+  const req = new Request('http://test', {
+    method: 'POST',
+    body: large,
+    headers: {
+      'content-type': 'application/json',
+      'content-length': String(large.length),
+      'x-real-ip': '203.0.113.10'
+    }
+  })
+  const res = await route.POST(req as any)
+  assert.equal(res.status, 413)
+})
+
 test('allows ranges up to 30 days', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
   const gemini = await import(`../gemini?t=${Date.now()}`)

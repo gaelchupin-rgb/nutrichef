@@ -55,6 +55,13 @@ test('parseMealPlanResponse repairs malformed JSON', async () => {
   assert.deepEqual(data, { a: 1 })
 })
 
+test('parseMealPlanResponse rejects non-object JSON', async () => {
+  process.env.GOOGLE_API_KEY = 'test'
+  process.env.GEMINI_MODEL = 'test-model'
+  const { parseMealPlanResponse } = await import(modulePath)
+  assert.throws(() => parseMealPlanResponse('42'), /Invalid meal plan format/)
+})
+
 test('analyzeNutrition parses model response', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'

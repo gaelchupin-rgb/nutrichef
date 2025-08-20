@@ -36,7 +36,9 @@ export function parseMealPlanResponse(text: string) {
 
   const extracted = extract(cleaned)
   if (Array.isArray(extracted) && extracted.length > 0) {
-    return extracted[0]
+    if (typeof extracted[0] === 'object' && extracted[0] !== null) {
+      return extracted[0]
+    }
   }
 
   const startObj = cleaned.indexOf('{')

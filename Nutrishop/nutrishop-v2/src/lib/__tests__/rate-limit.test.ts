@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { rateLimit, store } from '../../middleware/rate-limit'
+import { rateLimit, store, cleanup } from '../../middleware/rate-limit'
 
 test('rateLimit blocks after threshold', () => {
   store.clear()
@@ -16,8 +16,7 @@ test('rateLimit blocks after threshold', () => {
 test('purges expired records', () => {
   store.clear()
   store.set('old', { count: 1, expires: Date.now() - 1000 })
-  const req = new Request('http://test')
-  rateLimit(req as any)
+  cleanup()
   assert.ok(!store.has('old'))
 })
 
