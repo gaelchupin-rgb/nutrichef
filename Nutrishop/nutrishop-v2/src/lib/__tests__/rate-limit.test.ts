@@ -30,3 +30,18 @@ test('uses x-real-ip header when present', () => {
   assert.ok(res.ok)
   assert.ok(store.has('203.0.113.1'))
 })
+
+test('trims whitespace in IP headers', () => {
+  store.clear()
+  const req1 = new Request('http://test', {
+    headers: { 'x-forwarded-for': ' 203.0.113.1 ' }
+  })
+  const req2 = new Request('http://test', {
+    headers: { 'x-forwarded-for': '203.0.113.1' }
+  })
+  rateLimit(req1 as any)
+  rateLimit(req2 as any)
+  const record = store.get('203.0.113.1')
+  assert.equal(record?.count, 2)
+  assert.equal(store.size, 1)
+})

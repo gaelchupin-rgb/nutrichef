@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       parseISO(endDate),
       parseISO(startDate)
     )
-    if (rangeDays > maxRangeDays) {
+    if (rangeDays >= maxRangeDays) {
       return NextResponse.json({ error: 'Date range too long' }, { status: 400 })
     }
 

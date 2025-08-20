@@ -3,6 +3,25 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { getPrisma } from './db'
 import { compare } from 'bcryptjs'
 
+export async function authorize(credentials: any) {
+  if (!credentials?.email || !credentials?.password) return null
+  const prisma = getPrisma()
+  const email = credentials.email.trim().toLowerCase()
+  const user = await prisma.user.findUnique({
+    where: { email }
+  })
+  if (!user) return null
+  let isValid = false
+  try {
+    isValid = await compare(credentials.password, user.password)
+  } catch (error) {
+    console.error('Error comparing password:', error)
+    return null
+  }
+  if (!isValid) return null
+  return { id: user.id, email: user.email, name: user.username }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -11,23 +30,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
-        const prisma = getPrisma()
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        })
-        if (!user) return null
-        let isValid = false
-        try {
-          isValid = await compare(credentials.password, user.password)
-        } catch (error) {
-          console.error('Error comparing password:', error)
-          return null
-        }
-        if (!isValid) return null
-        return { id: user.id, email: user.email, name: user.username }
-      }
+      authorize
     })
   ],
   session: { strategy: 'jwt' },

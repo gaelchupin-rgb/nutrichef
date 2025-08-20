@@ -69,6 +69,23 @@ test('authorize returns null if password hash comparison fails', async () => {
   assert.equal(result, null)
 })
 
+test('authorize normalizes email casing', async () => {
+  ;(globalThis as any).prisma = {
+    user: {
+      findUnique: async () => ({
+        id: '1',
+        email: 'a@a.com',
+        username: 'user',
+        password: 'hash',
+      })
+    }
+  }
+  ;(bcrypt as any).compare = async () => true
+  const { authorize } = await import(`../auth?t=${Date.now()}`)
+  const result = await authorize({ email: ' A@A.COM ', password: 'pw' } as any)
+  assert.deepEqual(result, { id: '1', email: 'a@a.com', name: 'user' })
+})
+
 test('returns 400 on invalid JSON body', async () => {
   const { POST } = await import('../../app/api/auth/register/route')
   const req = new Request('http://test', {
