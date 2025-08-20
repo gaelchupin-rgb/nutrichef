@@ -8,13 +8,14 @@ generator client {
 }
 
 model User {
-  id       String   @id @default(cuid())
-  email    String   @unique
-  username String   @unique
-  password String
-  profile  Profile?
-  plans    Plan[]
-  recipes  Recipe[]
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  username           String
+  usernameNormalized String   @unique
+  password           String
+  profile            Profile?
+  plans              Plan[]
+  recipes            Recipe[]
 }
 
 model Profile {

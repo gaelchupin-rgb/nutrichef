@@ -35,7 +35,7 @@ test('handles unique constraint conflicts', async () => {
   assert.ok('error' in data)
 })
 
-test('normalizes email and username casing before persistence', async () => {
+test('normalizes email casing and preserves username', async () => {
   store.clear()
   const { POST } = await import('../../app/api/auth/register/route')
   let createArgs: any
@@ -60,7 +60,8 @@ test('normalizes email and username casing before persistence', async () => {
   })
   await POST(req as any)
   assert.equal(createArgs.data.email, 'test@example.com')
-  assert.equal(createArgs.data.username, 'user')
+  assert.equal(createArgs.data.username, 'UsEr')
+  assert.equal(createArgs.data.usernameNormalized, 'user')
 })
 
 test('authorize returns null if password hash comparison fails', async () => {
@@ -68,14 +69,14 @@ test('authorize returns null if password hash comparison fails', async () => {
   ;(prisma.user as any).findUnique = async () => ({ id: '1', email: 'a@a.com', username: 'user', password: 'bad' })
   ;(bcrypt as any).compare = async () => { throw new Error('fail') }
   const provider: any = authOptions.providers[0]
-  const result = await provider.authorize({ email: 'a@a.com', password: 'pw' })
+  const result = await provider.authorize({ email: 'a@a.com', password: 'pw' }, new Request('http://test'))
   assert.equal(result, null)
 })
 
 test('provider authorize rejects invalid email', async () => {
   const { authOptions } = await import('../auth')
   const provider: any = authOptions.providers[0]
-  const result = await provider.authorize({ email: 'invalid', password: 'Secret1!' })
+  const result = await provider.authorize({ email: 'invalid', password: 'Secret1!' }, new Request('http://test'))
   assert.equal(result, null)
 })
 
@@ -93,8 +94,22 @@ test('authorize normalizes email casing', async () => {
   }
   ;(bcrypt as any).compare = async () => true
   const { authorize } = await import(`../auth?t=${Date.now()}`)
-  const result = await authorize({ email: ' A@A.COM ', password: 'pw' })
+  const result = await authorize({ email: ' A@A.COM ', password: 'pw' }, new Request('http://test'))
   assert.deepEqual(result, { id: '1', email: 'a@a.com', name: 'user' })
+})
+
+test('rate limits repeated authorize attempts', async () => {
+  store.clear()
+  ;(globalThis as any).prisma = {
+    user: { findUnique: async () => ({ id: '1', email: 'a@a.com', username: 'user', password: 'hash' }) }
+  }
+  ;(bcrypt as any).compare = async () => true
+  const { authorize } = await import(`../auth?t=${Date.now()}`)
+  const req = new Request('http://test', { headers: { 'x-real-ip': '203.0.113.5' } })
+  for (let i = 0; i < 5; i++) {
+    await authorize({ email: 'a@a.com', password: 'pw' }, req)
+  }
+  await assert.rejects(() => authorize({ email: 'a@a.com', password: 'pw' }, req), /Too many attempts/)
 })
 
 test('returns 400 on invalid JSON body', async () => {

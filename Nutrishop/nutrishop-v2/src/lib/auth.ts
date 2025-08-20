@@ -3,12 +3,35 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { getPrisma } from './db'
 import { compare } from 'bcryptjs'
 import { z } from 'zod'
+import { rateLimit } from '@/middleware/rate-limit'
+import { isIP } from 'node:net'
 
 const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8),
 })
-export async function authorize(credentials: { email: string; password: string }) {
+function getIP(req?: { headers?: any; ip?: string }) {
+  const headers = req?.headers
+  const getHeader = (name: string) => {
+    if (!headers) return undefined
+    if (typeof headers.get === 'function') return headers.get(name)
+    return headers[name] || headers[name.toLowerCase()]
+  }
+  const candidates = [
+    getHeader('x-forwarded-for')?.split(',')[0]?.trim(),
+    getHeader('x-real-ip')?.trim(),
+    req?.ip,
+  ]
+  for (const ip of candidates) {
+    if (ip && isIP(ip)) return ip
+  }
+  return '127.0.0.1'
+}
+
+export async function authorize(credentials: { email: string; password: string }, req?: Request | any) {
+  const ip = getIP(req)
+  const limit = await rateLimit(new Request('http://auth', { headers: { 'x-real-ip': ip } }) as any)
+  if (!limit.ok) throw new Error('Too many attempts')
   const prisma = getPrisma()
   const email = credentials.email.trim().toLowerCase()
   const user = await prisma.user.findUnique({
@@ -34,10 +57,10 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(rawCredentials) {
+      async authorize(rawCredentials, req) {
         const parsed = credentialsSchema.safeParse(rawCredentials)
         if (!parsed.success) return null
-        return authorize(parsed.data)
+        return authorize(parsed.data, req)
       }
     })
   ],

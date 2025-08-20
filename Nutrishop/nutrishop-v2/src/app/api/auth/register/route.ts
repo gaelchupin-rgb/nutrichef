@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
 
     const prisma = getPrisma()
     const email = parsed.data.email.trim().toLowerCase()
-    const username = parsed.data.username.trim().toLowerCase()
+    const username = parsed.data.username.trim()
+    const usernameNormalized = username.toLowerCase()
     const { password } = parsed.data
 
     // Hash password
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
           data: {
             email,
             username,
+            usernameNormalized,
             password: hashedPassword,
           }
         })

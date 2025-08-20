@@ -67,13 +67,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Intervalle de dates invalide' }, { status: 400 })
     }
 
-    const maxRangeDays = 30
+    const maxRangeDays = 90
     const rangeDays = differenceInCalendarDays(
       parseISO(endDate),
       parseISO(startDate)
     )
-    if (rangeDays >= maxRangeDays) {
-      return NextResponse.json({ error: 'Intervalle de dates trop long' }, { status: 400 })
+    if (rangeDays > maxRangeDays) {
+      return NextResponse.json(
+        { error: 'Intervalle de dates trop long (maximum 90 jours)' },
+        { status: 400 }
+      )
     }
 
     // Get user profile

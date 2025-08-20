@@ -10,6 +10,7 @@ async function main() {
     create: {
       email: 'test@example.com',
       username: 'test',
+      usernameNormalized: 'test',
       password
     }
   })
