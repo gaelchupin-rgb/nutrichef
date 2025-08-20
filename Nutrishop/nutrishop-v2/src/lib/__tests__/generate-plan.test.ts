@@ -145,7 +145,7 @@ test('returns 413 on payload too large', async () => {
   assert.equal(res.status, 413)
 })
 
-test('allows ranges up to 30 days', async () => {
+test('allows ranges up to 90 days', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
   const gemini = await import(`../gemini?t=${Date.now()}`)
   utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
@@ -167,20 +167,20 @@ test('allows ranges up to 30 days', async () => {
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',
-    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-01-30' }),
+    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-03-31' }),
     headers: { 'content-type': 'application/json' },
   })
   const res = await route.POST(req as any)
   assert.equal(res.status, 200)
 })
 
-test('rejects ranges longer than 30 days', async () => {
+test('rejects ranges longer than 90 days', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
   utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',
-    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-01-31' }),
+    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-04-01' }),
     headers: { 'content-type': 'application/json' },
   })
   const res = await route.POST(req as any)

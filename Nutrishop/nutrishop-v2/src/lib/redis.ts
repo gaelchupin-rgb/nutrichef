@@ -6,7 +6,14 @@ export function getRedis() {
   const url = process.env.REDIS_URL
   if (!url) return null
   if (!client) {
-    client = new Redis(url)
+    try {
+      new URL(url)
+      client = new Redis(url)
+    } catch (err) {
+      console.error('Failed to connect to Redis:', err)
+      client = null
+      return null
+    }
   }
   return client
 }

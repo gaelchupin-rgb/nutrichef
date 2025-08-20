@@ -21,8 +21,15 @@ export function cleanup() {
     }
   }
 }
+declare global {
+  // Flag to ensure cleanup interval is only registered once across reloads
+  var __rateLimitCleanupSet: boolean | undefined
+}
 
-setInterval(cleanup, WINDOW_MS).unref?.()
+if (!globalThis.__rateLimitCleanupSet) {
+  setInterval(cleanup, WINDOW_MS).unref?.()
+  globalThis.__rateLimitCleanupSet = true
+}
 
 /**
  * Extract the client IP from common proxy headers or the request object.
