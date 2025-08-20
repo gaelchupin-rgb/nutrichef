@@ -2,14 +2,14 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { rateLimit, store, cleanup } from '../../middleware/rate-limit'
 
-test('rateLimit blocks after threshold', () => {
+test('rateLimit blocks after threshold', async () => {
   store.clear()
   const req = new Request('http://test')
   for (let i = 0; i < 5; i++) {
-    const res = rateLimit(req as any)
+    const res = await rateLimit(req as any)
     assert.ok(res.ok)
   }
-  const res = rateLimit(req as any)
+  const res = await rateLimit(req as any)
   assert.ok(!res.ok)
 })
 
@@ -20,17 +20,17 @@ test('purges expired records', () => {
   assert.ok(!store.has('old'))
 })
 
-test('uses x-real-ip header when present', () => {
+test('uses x-real-ip header when present', async () => {
   store.clear()
   const req = new Request('http://test', {
     headers: { 'x-real-ip': '203.0.113.1' }
   })
-  const res = rateLimit(req as any)
+  const res = await rateLimit(req as any)
   assert.ok(res.ok)
   assert.ok(store.has('203.0.113.1'))
 })
 
-test('trims whitespace in IP headers', () => {
+test('trims whitespace in IP headers', async () => {
   store.clear()
   const req1 = new Request('http://test', {
     headers: { 'x-forwarded-for': ' 203.0.113.1 ' }
@@ -38,18 +38,18 @@ test('trims whitespace in IP headers', () => {
   const req2 = new Request('http://test', {
     headers: { 'x-forwarded-for': '203.0.113.1' }
   })
-  rateLimit(req1 as any)
-  rateLimit(req2 as any)
+  await rateLimit(req1 as any)
+  await rateLimit(req2 as any)
   const record = store.get('203.0.113.1')
   assert.equal(record?.count, 2)
   assert.equal(store.size, 1)
 })
 
-test('falls back to loopback on invalid IP header', () => {
+test('falls back to loopback on invalid IP header', async () => {
   store.clear()
   const req = new Request('http://test', {
     headers: { 'x-real-ip': 'bad-ip' },
   })
-  rateLimit(req as any)
+  await rateLimit(req as any)
   assert.ok(store.has('127.0.0.1'))
 })

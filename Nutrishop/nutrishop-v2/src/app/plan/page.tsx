@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { fetchJson } from '@/lib/fetch-json'
 
 export default function PlanPage() {
   const [form, setForm] = useState({ startDate: '', endDate: '' })
@@ -15,20 +16,23 @@ export default function PlanPage() {
     e.preventDefault()
     setError(null)
     setResult(null)
+    if (!form.startDate || !form.endDate) {
+      setError('Les deux dates sont requises')
+      return
+    }
+    if (form.startDate > form.endDate) {
+      setError('La date de début doit précéder la date de fin')
+      return
+    }
     try {
-      const res = await fetch('/api/ai/generate-plan', {
+      const data = await fetchJson('/api/ai/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Erreur inconnue')
-      } else {
-        setResult(data)
-      }
+      setResult(data)
     } catch (err) {
-      setError('Erreur réseau')
+      setError(err instanceof Error ? err.message : 'Erreur inconnue')
     }
   }
 
@@ -41,12 +45,16 @@ export default function PlanPage() {
           name="startDate"
           value={form.startDate}
           onChange={handleChange}
+          required
+          max={form.endDate || undefined}
         />
         <input
           type="date"
           name="endDate"
           value={form.endDate}
           onChange={handleChange}
+          required
+          min={form.startDate || undefined}
         />
         <button type="submit">Envoyer</button>
       </form>

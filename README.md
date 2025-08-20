@@ -16,6 +16,7 @@ Ce projet contient une application Next.js située dans `Nutrishop/nutrishop-v2`
    - `DATABASE_URL`
    - `GOOGLE_API_KEY`
    - `GEMINI_MODEL`
+   - `REDIS_URL` (facultatif, pour la limitation de débit)
 4. Générer le client Prisma:
    ```bash
    npm run db:generate
