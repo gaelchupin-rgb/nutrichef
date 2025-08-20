@@ -18,7 +18,7 @@ const registerSchema = z.object({
     .min(8)
     .regex(/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9])/, {
       message:
-        'Password must be 8+ chars with upper, lower, number and symbol'
+        'Le mot de passe doit contenir au moins 8 caractères avec majuscule, minuscule, chiffre et symbole'
     })
 })
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       json = await readJsonBody(request, maxBody)
     } catch (err) {
       if (err instanceof PayloadTooLargeError) {
-        return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+        return NextResponse.json({ error: 'Corps de requête trop volumineux' }, { status: 413 })
       }
       if (err instanceof InvalidJsonError) {
         return NextResponse.json({ error: 'Requête JSON invalide' }, { status: 400 })
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (error) {
-    console.error('Registration error:', error)
+    console.error("Erreur d'inscription:", error)
     return NextResponse.json(
       { error: "Une erreur est survenue lors de l'inscription" },
       { status: 500 }
