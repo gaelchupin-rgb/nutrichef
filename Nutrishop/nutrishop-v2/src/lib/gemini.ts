@@ -35,9 +35,11 @@ export function parseMealPlanResponse(text: string) {
   const cleaned = text.replace(/```(?:json)?|```/gi, '').trim()
 
   const extracted = extract(cleaned)
-  if (Array.isArray(extracted) && extracted.length > 0) {
-    if (typeof extracted[0] === 'object' && extracted[0] !== null) {
-      return extracted[0]
+  if (Array.isArray(extracted)) {
+    for (const item of extracted) {
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        return item
+      }
     }
   }
 
@@ -45,14 +47,10 @@ export function parseMealPlanResponse(text: string) {
   const endObj = cleaned.lastIndexOf('}')
   if (startObj !== -1 && endObj !== -1) {
     try {
-      return JSON.parse(jsonrepair(cleaned.slice(startObj, endObj + 1)))
-    } catch {}
-  }
-  const startArr = cleaned.indexOf('[')
-  const endArr = cleaned.lastIndexOf(']')
-  if (startArr !== -1 && endArr !== -1) {
-    try {
-      return JSON.parse(jsonrepair(cleaned.slice(startArr, endArr + 1)))
+      const obj = JSON.parse(jsonrepair(cleaned.slice(startObj, endObj + 1)))
+      if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
+        return obj
+      }
     } catch {}
   }
 

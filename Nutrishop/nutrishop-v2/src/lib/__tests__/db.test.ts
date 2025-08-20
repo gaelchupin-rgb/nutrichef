@@ -23,3 +23,24 @@ test('disconnects prisma on beforeExit', () => {
   assert.equal(result.status, 0)
   assert.match(result.stdout.toString(), /disconnected/)
 })
+
+test('registers signal handlers only once', () => {
+  const code = `
+    process.env.DATABASE_URL='postgresql://user:pass@localhost:5432/test';
+    const before = process.listenerCount('SIGINT');
+    await import('./src/lib/db.ts');
+    const first = process.listenerCount('SIGINT');
+    await import('./src/lib/db.ts');
+    const second = process.listenerCount('SIGINT');
+    console.log(before, first, second);
+  `
+  const result = spawnSync(process.execPath, ['-r', 'tsx', '-e', code])
+  assert.equal(result.status, 0)
+  const [before, first, second] = result.stdout
+    .toString()
+    .trim()
+    .split(/\s+/)
+    .map(Number)
+  assert.equal(first, before + 1)
+  assert.equal(second, first)
+})

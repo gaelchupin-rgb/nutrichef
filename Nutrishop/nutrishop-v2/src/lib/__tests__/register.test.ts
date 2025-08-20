@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { getPrisma } from '../db'
 const prisma = getPrisma()
 import { Prisma } from '@prisma/client'
+import { store } from '../../middleware/rate-limit'
 
 const requestBody = {
   email: 'a@a.com',
@@ -12,6 +13,7 @@ const requestBody = {
 }
 
 test('handles unique constraint conflicts', async () => {
+  store.clear()
   const { POST } = await import('../../app/api/auth/register/route')
   ;(prisma.user as any).findFirst = () => { throw new Error('should not be called') }
   ;(prisma as any).$transaction = async () => {
@@ -34,6 +36,7 @@ test('handles unique constraint conflicts', async () => {
 })
 
 test('normalizes email and username casing before persistence', async () => {
+  store.clear()
   const { POST } = await import('../../app/api/auth/register/route')
   let createArgs: any
   ;(prisma.user as any).findFirst = () => { throw new Error('should not be called') }
@@ -69,6 +72,14 @@ test('authorize returns null if password hash comparison fails', async () => {
   assert.equal(result, null)
 })
 
+test('provider authorize rejects invalid email', async () => {
+  const { authOptions } = await import('../auth')
+  const provider: any = authOptions.providers[0]
+  const result = await provider.authorize({ email: 'invalid', password: 'Secret1!' })
+  assert.equal(result, null)
+})
+
+
 test('authorize normalizes email casing', async () => {
   ;(globalThis as any).prisma = {
     user: {
@@ -87,6 +98,7 @@ test('authorize normalizes email casing', async () => {
 })
 
 test('returns 400 on invalid JSON body', async () => {
+  store.clear()
   const { POST } = await import('../../app/api/auth/register/route')
   const req = new Request('http://test', {
     method: 'POST',
@@ -100,6 +112,7 @@ test('returns 400 on invalid JSON body', async () => {
 })
 
 test('returns 415 on invalid Content-Type', async () => {
+  store.clear()
   const { POST } = await import('../../app/api/auth/register/route')
   const req = new Request('http://test', {
     method: 'POST',
@@ -112,7 +125,21 @@ test('returns 415 on invalid Content-Type', async () => {
   assert.ok('error' in data)
 })
 
+test('returns 413 on payload too large', async () => {
+  store.clear()
+  const { POST } = await import('../../app/api/auth/register/route')
+  const large = 'a'.repeat(1_000_001)
+  const req = new Request('http://test', {
+    method: 'POST',
+    body: large,
+    headers: { 'content-type': 'application/json' },
+  })
+  const res = await POST(req as any)
+  assert.equal(res.status, 413)
+})
+
 test('returns 400 on weak password', async () => {
+  store.clear()
   const { POST } = await import('../../app/api/auth/register/route')
   const weak = { ...requestBody, password: 'weakpass' }
   const req = new Request('http://test', {

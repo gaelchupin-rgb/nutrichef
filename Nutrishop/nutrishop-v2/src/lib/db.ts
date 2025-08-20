@@ -28,7 +28,10 @@ const disconnect = async () => {
     console.error('Error disconnecting Prisma', error)
   }
 }
-
-process.once('beforeExit', disconnect)
-process.once('SIGTERM', disconnect)
-process.once('SIGINT', disconnect)
+const flag = '__prismaListenersRegistered'
+if (!(globalThis as any)[flag]) {
+  ;(globalThis as any)[flag] = true
+  process.once('beforeExit', disconnect)
+  process.once('SIGTERM', disconnect)
+  process.once('SIGINT', disconnect)
+}

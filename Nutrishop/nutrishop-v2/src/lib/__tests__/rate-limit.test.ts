@@ -44,3 +44,12 @@ test('trims whitespace in IP headers', () => {
   assert.equal(record?.count, 2)
   assert.equal(store.size, 1)
 })
+
+test('falls back to loopback on invalid IP header', () => {
+  store.clear()
+  const req = new Request('http://test', {
+    headers: { 'x-real-ip': 'bad-ip' },
+  })
+  rateLimit(req as any)
+  assert.ok(store.has('127.0.0.1'))
+})
