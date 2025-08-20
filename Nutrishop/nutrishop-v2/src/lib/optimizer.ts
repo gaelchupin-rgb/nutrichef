@@ -46,9 +46,14 @@ export interface OptimizationResult {
   recommendations: string[]
 }
 
-export const MAX_STORE_COMBINATIONS = Number(
-  process.env.MAX_STORE_COMBINATIONS || '100000'
+const parsedMaxStoreCombinations = parseInt(
+  process.env.MAX_STORE_COMBINATIONS ?? '100000',
+  10
 )
+
+export const MAX_STORE_COMBINATIONS = isNaN(parsedMaxStoreCombinations)
+  ? 100000
+  : parsedMaxStoreCombinations
 
 // Convertir les unités en unités de base pour la comparaison
 const weightUnits: Record<string, number> = {
