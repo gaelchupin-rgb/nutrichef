@@ -21,10 +21,10 @@ import {
 
 const requestSchema = z.object({
   startDate: z.string().refine(isValidDate, {
-    message: 'Invalid startDate'
+    message: 'Date de début invalide'
   }),
   endDate: z.string().refine(isValidDate, {
-    message: 'Invalid endDate'
+    message: 'Date de fin invalide'
   })
 })
 
@@ -32,17 +32,17 @@ export async function POST(req: NextRequest) {
   try {
     const limit = rateLimit(req)
     if (!limit.ok) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+      return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
     const contentType = req.headers.get('content-type') || ''
     if (!contentType.includes('application/json')) {
-      return NextResponse.json({ error: 'Unsupported Media Type' }, { status: 415 })
+      return NextResponse.json({ error: 'Type de média non pris en charge' }, { status: 415 })
     }
     const session = await sessionFetcher.get(authOptions)
     const userId = (session?.user as { id: string } | undefined)?.id
 
     if (!session || !userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
     const maxBody = 1_000_000
     let body: unknown
@@ -50,21 +50,21 @@ export async function POST(req: NextRequest) {
       body = await readJsonBody(req, maxBody)
     } catch (err) {
       if (err instanceof PayloadTooLargeError) {
-        return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+        return NextResponse.json({ error: 'Corps de requête trop volumineux' }, { status: 413 })
       }
       if (err instanceof InvalidJsonError) {
-        return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+        return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
       }
       throw err
     }
     const parsed = requestSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
+      return NextResponse.json({ error: 'Entrée invalide' }, { status: 400 })
     }
     const { startDate, endDate } = parsed.data
 
     if (!isValidDateRange(startDate, endDate)) {
-      return NextResponse.json({ error: 'Invalid date range' }, { status: 400 })
+      return NextResponse.json({ error: 'Intervalle de dates invalide' }, { status: 400 })
     }
 
     const maxRangeDays = 30
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       parseISO(startDate)
     )
     if (rangeDays >= maxRangeDays) {
-      return NextResponse.json({ error: 'Date range too long' }, { status: 400 })
+      return NextResponse.json({ error: 'Intervalle de dates trop long' }, { status: 400 })
     }
 
     // Get user profile
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     })
     
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 })
     }
 
     // Build prompt
@@ -105,18 +105,18 @@ export async function POST(req: NextRequest) {
     const parsedPlan = mealPlanSchema.safeParse(mealPlan)
     if (!parsedPlan.success) {
       return NextResponse.json(
-        { error: 'Invalid meal plan format' },
+        { error: 'Format du plan repas invalide' },
         { status: 500 }
       )
     }
     const validMealPlan = parsedPlan.data
 
     if (!hasValidMealDates(validMealPlan.days)) {
-      return NextResponse.json({ error: 'Invalid meal date' }, { status: 400 })
+      return NextResponse.json({ error: 'Date de repas invalide' }, { status: 400 })
     }
 
     if (!datesWithinRange(validMealPlan.days, startDate, endDate)) {
-      return NextResponse.json({ error: 'Invalid meal date' }, { status: 400 })
+      return NextResponse.json({ error: 'Date de repas invalide' }, { status: 400 })
     }
 
     const plan = await saveMealPlan(
@@ -133,15 +133,15 @@ export async function POST(req: NextRequest) {
       mealPlan: validMealPlan
     })
   } catch (error) {
-    console.error('Error generating meal plan:', error)
+    console.error('Erreur lors de la génération du plan repas:', error)
     if (error instanceof Error && error.message === 'Invalid meal plan format') {
       return NextResponse.json(
-        { error: 'Invalid meal plan format' },
+        { error: 'Format du plan repas invalide' },
         { status: 500 }
       )
     }
     return NextResponse.json(
-      { error: 'Failed to generate meal plan' },
+      { error: 'Échec de la génération du plan repas' },
       { status: 500 }
     )
   }
