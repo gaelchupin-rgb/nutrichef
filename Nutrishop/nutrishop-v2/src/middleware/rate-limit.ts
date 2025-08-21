@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
-import { isIP } from 'node:net'
 import { getRedis } from '@/lib/redis'
+import { getIP } from '@/lib/ip'
 
 interface RateRecord {
   count: number
@@ -29,23 +29,6 @@ declare global {
 if (!globalThis.__rateLimitCleanupSet) {
   setInterval(cleanup, WINDOW_MS).unref?.()
   globalThis.__rateLimitCleanupSet = true
-}
-
-/**
- * Extract the client IP from common proxy headers or the request object.
- * Falls back to 127.0.0.1 when no information is available.
- */
-function getIP(req: NextRequest) {
-  const candidates = [
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
-    req.headers.get('x-real-ip')?.trim(),
-    (req as any).ip,
-  ]
-
-  for (const ip of candidates) {
-    if (ip && isIP(ip)) return ip
-  }
-  return '127.0.0.1'
 }
 
 export async function rateLimit(

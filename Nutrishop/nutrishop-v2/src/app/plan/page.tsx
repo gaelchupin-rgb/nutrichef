@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { fetchJson } from '@/lib/fetch-json'
+import { fetchJson } from '@/lib/http'
 
 export default function PlanPage() {
   const [form, setForm] = useState({ startDate: '', endDate: '' })
@@ -25,7 +25,7 @@ export default function PlanPage() {
       return
     }
     try {
-      const data = await fetchJson('/api/ai/generate-plan', {
+      const data = await fetchJson<{ success: boolean; planId: number; mealPlan: any }>('/api/ai/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)

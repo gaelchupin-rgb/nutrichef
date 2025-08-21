@@ -4,30 +4,12 @@ import { getPrisma } from './db'
 import { compare } from 'bcryptjs'
 import { z } from 'zod'
 import { rateLimit } from '@/middleware/rate-limit'
-import { isIP } from 'node:net'
+import { getIP } from './ip'
 
 const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8),
 })
-function getIP(req?: { headers?: any; ip?: string }) {
-  const headers = req?.headers
-  const getHeader = (name: string) => {
-    if (!headers) return undefined
-    if (typeof headers.get === 'function') return headers.get(name)
-    return headers[name] || headers[name.toLowerCase()]
-  }
-  const candidates = [
-    getHeader('x-forwarded-for')?.split(',')[0]?.trim(),
-    getHeader('x-real-ip')?.trim(),
-    req?.ip,
-  ]
-  for (const ip of candidates) {
-    if (ip && isIP(ip)) return ip
-  }
-  return '127.0.0.1'
-}
-
 export async function authorize(credentials: { email: string; password: string }, req?: Request | any) {
   const ip = getIP(req)
   const limit = await rateLimit(new Request('http://auth', { headers: { 'x-real-ip': ip } }) as any)

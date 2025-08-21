@@ -6,18 +6,11 @@ import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates, isValidDate } from '@/lib/date-utils'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { z } from 'zod'
-import {
-  sessionFetcher,
-  mealPlanSchema,
-  datesWithinRange,
-  saveMealPlan,
-} from '@/lib/meal-plan'
+import { mealPlanSchema, datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
+import { getSession } from '@/lib/session'
 import { rateLimit } from '@/middleware/rate-limit'
-import {
-  readJsonBody,
-  PayloadTooLargeError,
-  InvalidJsonError,
-} from '@/lib/request'
+import { readJsonBody } from '@/lib/http'
+import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE } from '@/lib/errors'
 
 const requestSchema = z.object({
   startDate: z.string().refine(isValidDate, {
@@ -38,7 +31,7 @@ export async function POST(req: NextRequest) {
     if (!contentType.includes('application/json')) {
       return NextResponse.json({ error: 'Type de média non pris en charge' }, { status: 415 })
     }
-    const session = await sessionFetcher.get(authOptions)
+    const session = await getSession(authOptions)
     const userId = (session?.user as { id: string } | undefined)?.id
 
     if (!session || !userId) {
@@ -50,10 +43,10 @@ export async function POST(req: NextRequest) {
       body = await readJsonBody(req, maxBody)
     } catch (err) {
       if (err instanceof PayloadTooLargeError) {
-        return NextResponse.json({ error: 'Corps de requête trop volumineux' }, { status: 413 })
+        return NextResponse.json({ error: PAYLOAD_TOO_LARGE }, { status: 413 })
       }
       if (err instanceof InvalidJsonError) {
-        return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
+        return NextResponse.json({ error: JSON_INVALIDE }, { status: 400 })
       }
       throw err
     }

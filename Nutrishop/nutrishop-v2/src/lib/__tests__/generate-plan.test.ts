@@ -102,8 +102,8 @@ test('datesWithinRange rejects invalid dates', async () => {
 })
 
 test('returns 400 on invalid JSON', async () => {
-  const utils = await import(`../meal-plan?t=${Date.now()}`)
-  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  const session = await import(`../session?t=${Date.now()}`)
+  session.setSessionGetter(async () => ({ user: { id: '1' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',
@@ -115,8 +115,8 @@ test('returns 400 on invalid JSON', async () => {
 })
 
 test('returns 415 on invalid Content-Type', async () => {
-  const utils = await import(`../meal-plan?t=${Date.now()}`)
-  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  const session = await import(`../session?t=${Date.now()}`)
+  session.setSessionGetter(async () => ({ user: { id: '1' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',
@@ -128,8 +128,8 @@ test('returns 415 on invalid Content-Type', async () => {
 })
 
 test('returns 413 on payload too large', async () => {
-  const utils = await import(`../meal-plan?t=${Date.now()}`)
-  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  const session = await import(`../session?t=${Date.now()}`)
+  session.setSessionGetter(async () => ({ user: { id: '1' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const large = 'a'.repeat(1_000_001)
   const req = new Request('http://test', {
@@ -146,9 +146,9 @@ test('returns 413 on payload too large', async () => {
 })
 
 test('allows ranges up to 90 days', async () => {
-  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  const session = await import(`../session?t=${Date.now()}`)
   const gemini = await import(`../gemini?t=${Date.now()}`)
-  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  session.setSessionGetter(async () => ({ user: { id: '1' } }))
   ;(prisma as any).profile = {
     findUnique: async () => ({ cuisineType: null, appliances: [] }),
   }
@@ -175,8 +175,8 @@ test('allows ranges up to 90 days', async () => {
 })
 
 test('rejects ranges longer than 90 days', async () => {
-  const utils = await import(`../meal-plan?t=${Date.now()}`)
-  utils.sessionFetcher.get = async () => ({ user: { id: '1' } })
+  const session = await import(`../session?t=${Date.now()}`)
+  session.setSessionGetter(async () => ({ user: { id: '1' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',

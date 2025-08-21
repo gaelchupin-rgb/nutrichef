@@ -1,4 +1,3 @@
-import { getServerSession } from 'next-auth'
 import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { isValidDate } from '@/lib/date-utils'
@@ -7,8 +6,6 @@ import { parseISO } from 'date-fns'
 export interface MealPlanProfile {
   cuisineType?: string
 }
-
-export const sessionFetcher = { get: getServerSession }
 
 export const mealTypes = ['breakfast', 'lunch', 'dinner'] as const
 
