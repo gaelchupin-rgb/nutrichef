@@ -1,3 +1,5 @@
+import { getMaxStoreCombinations } from './config'
+
 export interface ShoppingNeed {
   id: string
   name: string
@@ -46,14 +48,7 @@ export interface OptimizationResult {
   recommendations: string[]
 }
 
-const parsedMaxStoreCombinations = parseInt(
-  process.env.MAX_STORE_COMBINATIONS ?? '100000',
-  10
-)
-
-export const MAX_STORE_COMBINATIONS = isNaN(parsedMaxStoreCombinations)
-  ? 100000
-  : parsedMaxStoreCombinations
+export const MAX_STORE_COMBINATIONS = getMaxStoreCombinations()
 
 // Convertir les unités en unités de base pour la comparaison
 const weightUnits: Record<string, number> = {

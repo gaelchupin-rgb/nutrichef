@@ -4,11 +4,8 @@ import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { rateLimit } from '@/middleware/rate-limit'
-import {
-  readJsonBody,
-  PayloadTooLargeError,
-  InvalidJsonError,
-} from '@/lib/request'
+import { readJsonBody } from '@/lib/http'
+import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE } from '@/lib/errors'
 
 const registerSchema = z.object({
   email: z.string().trim().email(),
@@ -38,10 +35,10 @@ export async function POST(request: NextRequest) {
       json = await readJsonBody(request, maxBody)
     } catch (err) {
       if (err instanceof PayloadTooLargeError) {
-        return NextResponse.json({ error: 'Corps de requête trop volumineux' }, { status: 413 })
+        return NextResponse.json({ error: PAYLOAD_TOO_LARGE }, { status: 413 })
       }
       if (err instanceof InvalidJsonError) {
-        return NextResponse.json({ error: 'Requête JSON invalide' }, { status: 400 })
+        return NextResponse.json({ error: JSON_INVALIDE }, { status: 400 })
       }
       throw err
     }
