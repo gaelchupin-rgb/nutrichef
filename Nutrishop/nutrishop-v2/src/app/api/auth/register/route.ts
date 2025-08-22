@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs'
 import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
-import { rateLimit } from '@/middleware/rate-limit'
-import { parseJsonRequest } from '@/lib/http'
-import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE } from '@/lib/errors'
+import { rateLimit } from '@/lib/rate-limit'
+import { parseJsonBody } from '@/lib/api-utils'
+import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE, TOO_MANY_REQUESTS } from '@/lib/errors'
 
 const registerSchema = z.object({
   email: z.string().trim().email(),
@@ -23,12 +23,11 @@ export async function POST(request: NextRequest) {
   try {
     const limit = await rateLimit(request)
     if (!limit.ok) {
-      return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
+      return NextResponse.json({ error: TOO_MANY_REQUESTS }, { status: 429 })
     }
-    const maxBody = 1_000_000
     let json: unknown
     try {
-      const parsedReq = await parseJsonRequest(request, maxBody)
+      const parsedReq = await parseJsonBody(request)
       if (!parsedReq.ok) {
         return NextResponse.json({ error: 'Content-Type invalide' }, { status: 415 })
       }

@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { getPrisma } from '../db'
 import { differenceInCalendarDays } from 'date-fns'
+import { DEFAULT_MAX_JSON_SIZE } from '../api-utils'
 const prisma = getPrisma()
 
 const mealPlan = {
@@ -131,7 +132,7 @@ test('returns 413 on payload too large', async () => {
   const session = await import(`../session?t=${Date.now()}`)
   session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
-  const large = 'a'.repeat(1_000_001)
+  const large = 'a'.repeat(DEFAULT_MAX_JSON_SIZE + 1)
   const req = new Request('http://test', {
     method: 'POST',
     body: large,

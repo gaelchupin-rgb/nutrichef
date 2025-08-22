@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { rateLimit, rateLimitByIP, store, cleanup } from '../../middleware/rate-limit'
+import { rateLimit, rateLimitByIP, store, cleanup } from '../rate-limit'
 
 test('rateLimit blocks after threshold', async () => {
   store.clear()

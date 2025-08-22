@@ -8,9 +8,9 @@ import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { z } from 'zod'
 import { datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
 import { getSession } from '@/lib/session'
-import { rateLimit } from '@/middleware/rate-limit'
-import { parseJsonRequest } from '@/lib/http'
-import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE } from '@/lib/errors'
+import { rateLimit } from '@/lib/rate-limit'
+import { parseJsonBody } from '@/lib/api-utils'
+import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE, TOO_MANY_REQUESTS } from '@/lib/errors'
 
 const requestSchema = z.object({
   startDate: z.string().refine(isValidDate, {
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   try {
     const limit = await rateLimit(req)
     if (!limit.ok) {
-      return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
+      return NextResponse.json({ error: TOO_MANY_REQUESTS }, { status: 429 })
     }
     const session = await getSession(authOptions)
     const userId = session?.user.id
@@ -33,10 +33,9 @@ export async function POST(req: NextRequest) {
     if (!session || !userId) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
-    const maxBody = 1_000_000
     let body: unknown
     try {
-      const parsedReq = await parseJsonRequest(req, maxBody)
+      const parsedReq = await parseJsonBody(req)
       if (!parsedReq.ok) {
         return NextResponse.json(
           { error: 'Type de média non pris en charge' },

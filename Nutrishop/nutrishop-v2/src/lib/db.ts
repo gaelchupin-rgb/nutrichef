@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { getDatabaseUrl } from './config'
+import { getEnv } from './config'
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient
@@ -7,9 +7,15 @@ const globalForPrisma = globalThis as unknown as {
 
 export function getPrisma() {
   if (!globalForPrisma.prisma) {
-    const databaseUrl = getDatabaseUrl()
+    const { DATABASE_URL } = getEnv()
+    if (!DATABASE_URL) throw new Error('DATABASE_URL is required')
+    try {
+      new URL(DATABASE_URL)
+    } catch {
+      throw new Error('DATABASE_URL is invalid')
+    }
     globalForPrisma.prisma = new PrismaClient({
-      datasources: { db: { url: databaseUrl } }
+      datasources: { db: { url: DATABASE_URL } }
     })
   }
   return globalForPrisma.prisma
