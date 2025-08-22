@@ -33,28 +33,30 @@ if (!globalThis.__rateLimitCleanupSet) {
 
 export async function rateLimitByIP(
   ip: string,
+  key?: string,
   limit: number = MAX_REQUESTS,
   windowMs: number = WINDOW_MS
 ) {
   const now = Date.now()
   const redis = getRedis()
+  const id = key ? `${ip}:${key}` : ip
 
   if (redis) {
-    const key = `rate:${ip}`
-    const count = await redis.incr(key)
+    const redisKey = `rate:${id}`
+    const count = await redis.incr(redisKey)
     if (count === 1) {
-      await redis.pexpire(key, windowMs)
+      await redis.pexpire(redisKey, windowMs)
     }
-    const ttl = await redis.pttl(key)
+    const ttl = await redis.pttl(redisKey)
     if (count > limit) {
       return { ok: false, remaining: 0, reset: now + ttl }
     }
     return { ok: true, remaining: limit - count, reset: now + ttl }
   }
 
-  const record = store.get(ip)
+  const record = store.get(id)
   if (!record || now > record.expires) {
-    store.set(ip, { count: 1, expires: now + windowMs })
+    store.set(id, { count: 1, expires: now + windowMs })
     return { ok: true, remaining: limit - 1, reset: now + windowMs }
   }
   if (record.count >= limit) {
@@ -70,5 +72,6 @@ export async function rateLimit(
   windowMs: number = WINDOW_MS
 ) {
   const ip = getIP(req)
-  return rateLimitByIP(ip, limit, windowMs)
+  const pathname = (req as any)?.nextUrl?.pathname ?? (req ? new URL(req.url).pathname : undefined)
+  return rateLimitByIP(ip, pathname, limit, windowMs)
 }

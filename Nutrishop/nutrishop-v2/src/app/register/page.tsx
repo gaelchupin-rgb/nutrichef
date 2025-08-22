@@ -1,10 +1,15 @@
 "use client"
 
 import { useState } from 'react'
-import { fetchJson } from '@/lib/http'
+import { fetchJson, ApiError } from '@/lib/http'
+import { registerSchema } from '@/lib/types'
+import type { z } from 'zod'
+
+type RegisterInput = z.infer<typeof registerSchema>
+interface RegisterResponse { success: boolean }
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ email: '', username: '', password: '' })
+  const [form, setForm] = useState<RegisterInput>({ email: '', username: '', password: '' })
   const [message, setMessage] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -15,14 +20,18 @@ export default function RegisterPage() {
     e.preventDefault()
     setMessage(null)
     try {
-      await fetchJson<{ success: boolean }>('/api/auth/register', {
+      await fetchJson<RegisterResponse>('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       })
       setMessage('Inscription réussie')
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Erreur inconnue')
+      if (err instanceof ApiError) {
+        setMessage(err.status >= 500 ? 'Erreur serveur' : err.message)
+      } else {
+        setMessage('Erreur inconnue')
+      }
     }
   }
 
