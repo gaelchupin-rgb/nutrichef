@@ -489,3 +489,43 @@ export function optimizeShopping(
 ): OptimizationResult {
   return findBestStoreCombination(needs, offers, maxStores)
 }
+
+// Séparer les besoins en produits frais ou secs
+const FRESH_KEYWORDS = [
+  'lait',
+  'oeuf',
+  'fromage',
+  'beurre',
+  'yaourt',
+  'viande',
+  'poulet',
+  'boeuf',
+  'poisson',
+  'fruit',
+  'légume'
+]
+
+export function classifyShoppingNeeds(needs: ShoppingNeed[]): {
+  fresh: ShoppingNeed[]
+  dry: ShoppingNeed[]
+} {
+  const fresh: ShoppingNeed[] = []
+  const dry: ShoppingNeed[] = []
+
+  for (const need of needs) {
+    const name = need.name.toLowerCase()
+    const category = need.category
+      ? need.category
+      : FRESH_KEYWORDS.some((k) => name.includes(k))
+        ? 'fresh'
+        : 'dry'
+    need.category = category
+    if (category === 'fresh') {
+      fresh.push(need)
+    } else {
+      dry.push(need)
+    }
+  }
+
+  return { fresh, dry }
+}

@@ -8,6 +8,7 @@ import {
   namesMatch,
   optimizeShopping,
   UnknownUnitError,
+  classifyShoppingNeeds,
 } from '../optimizer'
 
 test('generateCombinations returns all combinations', () => {
@@ -131,4 +132,16 @@ test('namesMatch handles token order and minor differences', () => {
 
 test('namesMatch requires bidirectional token matches', () => {
   assert.ok(!namesMatch('sauce tomate', 'tomate'))
+})
+
+test('classifyShoppingNeeds splits fresh and dry', () => {
+  const needs = [
+    { id: '1', name: 'Lait', quantity: 1, unit: 'l' },
+    { id: '2', name: 'Pâtes', quantity: 500, unit: 'g' }
+  ]
+  const res = classifyShoppingNeeds(needs)
+  assert.equal(res.fresh.length, 1)
+  assert.equal(res.dry.length, 1)
+  assert.equal(res.fresh[0].id, '1')
+  assert.equal(needs[0].category, 'fresh')
 })
