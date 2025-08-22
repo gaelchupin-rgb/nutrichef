@@ -103,7 +103,7 @@ test('datesWithinRange rejects invalid dates', async () => {
 
 test('returns 400 on invalid JSON', async () => {
   const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1' } }))
+  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',
@@ -116,7 +116,7 @@ test('returns 400 on invalid JSON', async () => {
 
 test('returns 415 on invalid Content-Type', async () => {
   const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1' } }))
+  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',
@@ -129,7 +129,7 @@ test('returns 415 on invalid Content-Type', async () => {
 
 test('returns 413 on payload too large', async () => {
   const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1' } }))
+  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const large = 'a'.repeat(1_000_001)
   const req = new Request('http://test', {
@@ -148,7 +148,7 @@ test('returns 413 on payload too large', async () => {
 test('allows ranges up to 90 days', async () => {
   const session = await import(`../session?t=${Date.now()}`)
   const gemini = await import(`../gemini?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1' } }))
+  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
   ;(prisma as any).profile = {
     findUnique: async () => ({ cuisineType: null, appliances: [] }),
   }
@@ -176,7 +176,7 @@ test('allows ranges up to 90 days', async () => {
 
 test('rejects ranges longer than 90 days', async () => {
   const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1' } }))
+  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
   const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
   const req = new Request('http://test', {
     method: 'POST',

@@ -31,12 +31,11 @@ if (!globalThis.__rateLimitCleanupSet) {
   globalThis.__rateLimitCleanupSet = true
 }
 
-export async function rateLimit(
-  req: NextRequest,
+export async function rateLimitByIP(
+  ip: string,
   limit: number = MAX_REQUESTS,
   windowMs: number = WINDOW_MS
 ) {
-  const ip = getIP(req)
   const now = Date.now()
   const redis = getRedis()
 
@@ -63,4 +62,13 @@ export async function rateLimit(
   }
   record.count += 1
   return { ok: true, remaining: limit - record.count, reset: record.expires }
+}
+
+export async function rateLimit(
+  req: NextRequest,
+  limit: number = MAX_REQUESTS,
+  windowMs: number = WINDOW_MS
+) {
+  const ip = getIP(req)
+  return rateLimitByIP(ip, limit, windowMs)
 }

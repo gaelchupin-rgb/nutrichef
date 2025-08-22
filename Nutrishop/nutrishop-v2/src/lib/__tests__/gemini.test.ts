@@ -69,6 +69,19 @@ test('parseMealPlanResponse rejects arrays', async () => {
   assert.throws(() => parseMealPlanResponse('[1,2,3]'), /Invalid meal plan format/)
 })
 
+test('generateMealPlan parses model response', async () => {
+  process.env.GOOGLE_API_KEY = 'test'
+  process.env.GEMINI_MODEL = 'test-model'
+  const { generateMealPlan, setModel } = await import(modulePath)
+  const mockModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> = {
+    generateContent: async () => ({ response: { text: () => '{"days":[]}' } }) as any,
+  } as any
+  setModel(mockModel)
+  const result = await generateMealPlan('prompt')
+  assert.deepEqual(result, { days: [] })
+  setModel(null)
+})
+
 test('analyzeNutrition parses model response', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'

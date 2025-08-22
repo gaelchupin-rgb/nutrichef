@@ -37,6 +37,18 @@ export async function readJsonBody<T>(
   }
 }
 
+export async function parseJsonRequest<T>(
+  req: NextRequest,
+  maxBytes: number
+) {
+  const contentType = req.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    return { ok: false as const }
+  }
+  const data = await readJsonBody<T>(req, maxBytes)
+  return { ok: true as const, data }
+}
+
 export async function fetchJson<T>(
   input: RequestInfo | URL,
   init?: RequestInit

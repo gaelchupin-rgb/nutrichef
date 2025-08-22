@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import { getPrisma } from '../db'
 const prisma = getPrisma()
 import { Prisma } from '@prisma/client'
-import { store } from '../../middleware/rate-limit'
+import { store, rateLimitByIP } from '../../middleware/rate-limit'
 
 const requestBody = {
   email: 'a@a.com',
@@ -110,6 +110,17 @@ test('rate limits repeated authorize attempts', async () => {
     await authorize({ email: 'a@a.com', password: 'pw' }, req)
   }
   await assert.rejects(() => authorize({ email: 'a@a.com', password: 'pw' }, req), /Too many attempts/)
+})
+
+test('rateLimitByIP can be called directly', async () => {
+  store.clear()
+  const ip = '203.0.113.20'
+  for (let i = 0; i < 5; i++) {
+    const res = await rateLimitByIP(ip)
+    assert.ok(res.ok)
+  }
+  const res = await rateLimitByIP(ip)
+  assert.ok(!res.ok)
 })
 
 test('returns 400 on invalid JSON body', async () => {
