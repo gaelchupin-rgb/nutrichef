@@ -9,6 +9,14 @@ import {
   InvalidJsonError,
 } from './errors'
 
+export class ApiError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
 export async function readJsonBody<T>(
   req: NextRequest,
   maxBytes: number
@@ -57,16 +65,16 @@ export async function fetchJson<T>(
   const contentType = res.headers.get('content-type') || ''
   if (!contentType.includes('application/json')) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || REPONSE_NON_JSON)
+    throw new ApiError(res.status, text || REPONSE_NON_JSON)
   }
   let data: T
   try {
     data = await res.json()
   } catch {
-    throw new Error(REPONSE_JSON_INVALIDE)
+    throw new ApiError(res.status, REPONSE_JSON_INVALIDE)
   }
   if (!res.ok) {
-    throw new Error((data as any)?.error || ERREUR_INCONNUE)
+    throw new ApiError(res.status, (data as any)?.error || ERREUR_INCONNUE)
   }
   return data
 }

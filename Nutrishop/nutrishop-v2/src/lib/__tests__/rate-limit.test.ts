@@ -38,7 +38,7 @@ test('uses x-real-ip header when present', async () => {
   })
   const res = await rateLimit(req as any)
   assert.ok(res.ok)
-  assert.ok(store.has('203.0.113.1'))
+  assert.ok(store.has('203.0.113.1:/'))
 })
 
 test('trims whitespace in IP headers', async () => {
@@ -51,7 +51,7 @@ test('trims whitespace in IP headers', async () => {
   })
   await rateLimit(req1 as any)
   await rateLimit(req2 as any)
-  const record = store.get('203.0.113.1')
+  const record = store.get('203.0.113.1:/')
   assert.equal(record?.count, 2)
   assert.equal(store.size, 1)
 })
@@ -62,5 +62,5 @@ test('falls back to loopback on invalid IP header', async () => {
     headers: { 'x-real-ip': 'bad-ip' },
   })
   await rateLimit(req as any)
-  assert.ok(store.has('127.0.0.1'))
+  assert.ok(store.has('127.0.0.1:/'))
 })

@@ -1,10 +1,15 @@
 "use client"
 
 import { useState } from 'react'
-import { fetchJson } from '@/lib/http'
+import { fetchJson, ApiError } from '@/lib/http'
+import { requestSchema } from '@/lib/types'
+import type { z } from 'zod'
+
+type PlanRequest = z.infer<typeof requestSchema>
+interface PlanResponse { success: boolean; planId: number; mealPlan: any }
 
 export default function PlanPage() {
-  const [form, setForm] = useState({ startDate: '', endDate: '' })
+  const [form, setForm] = useState<PlanRequest>({ startDate: '', endDate: '' })
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<any>(null)
 
@@ -25,14 +30,18 @@ export default function PlanPage() {
       return
     }
     try {
-      const data = await fetchJson<{ success: boolean; planId: number; mealPlan: any }>('/api/ai/generate-plan', {
+      const data = await fetchJson<PlanResponse>('/api/ai/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       })
       setResult(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur inconnue')
+      if (err instanceof ApiError) {
+        setError(err.status >= 500 ? 'Erreur serveur' : err.message)
+      } else {
+        setError('Erreur inconnue')
+      }
     }
   }
 

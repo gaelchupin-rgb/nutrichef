@@ -1,46 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getPrisma } from '@/lib/db'
-import { z } from 'zod'
 import { Prisma } from '@prisma/client'
-import { rateLimit } from '@/lib/rate-limit'
-import { parseJsonBody } from '@/lib/api-utils'
-import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE, TOO_MANY_REQUESTS } from '@/lib/errors'
+import { handleJsonRoute } from '@/lib/api-handler'
+import { registerSchema } from '@/lib/types'
 
-const registerSchema = z.object({
-  email: z.string().trim().email(),
-  username: z.string().trim().min(3),
-  password: z
-    .string()
-    .min(8)
-    .regex(/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9])/, {
-      message:
-        'Le mot de passe doit contenir au moins 8 caractères avec majuscule, minuscule, chiffre et symbole'
-    })
-})
-
-export async function POST(request: NextRequest) {
+export const POST = handleJsonRoute(async (json, _req: NextRequest) => {
   try {
-    const limit = await rateLimit(request)
-    if (!limit.ok) {
-      return NextResponse.json({ error: TOO_MANY_REQUESTS }, { status: 429 })
-    }
-    let json: unknown
-    try {
-      const parsedReq = await parseJsonBody(request)
-      if (!parsedReq.ok) {
-        return NextResponse.json({ error: 'Content-Type invalide' }, { status: 415 })
-      }
-      json = parsedReq.data
-    } catch (err) {
-      if (err instanceof PayloadTooLargeError) {
-        return NextResponse.json({ error: PAYLOAD_TOO_LARGE }, { status: 413 })
-      }
-      if (err instanceof InvalidJsonError) {
-        return NextResponse.json({ error: JSON_INVALIDE }, { status: 400 })
-      }
-      throw err
-    }
     const parsed = registerSchema.safeParse(json)
     if (!parsed.success) {
       const passwordError = parsed.error.issues.find(i => i.path[0] === 'password')
@@ -56,10 +22,8 @@ export async function POST(request: NextRequest) {
     const usernameNormalized = username.toLowerCase()
     const { password } = parsed.data
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Create user and profile atomically
     try {
       await prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
@@ -97,4 +61,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

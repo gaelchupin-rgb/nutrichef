@@ -3,56 +3,23 @@ import { authOptions } from '@/lib/auth'
 import { getPrisma } from '@/lib/db'
 import { generateMealPlan } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
-import { isValidDateRange, hasValidMealDates, isValidDate } from '@/lib/date-utils'
+import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
-import { z } from 'zod'
 import { datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
 import { getSession } from '@/lib/session'
-import { rateLimit } from '@/lib/rate-limit'
-import { parseJsonBody } from '@/lib/api-utils'
-import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE, TOO_MANY_REQUESTS } from '@/lib/errors'
+import { handleJsonRoute } from '@/lib/api-handler'
+import { requestSchema } from '@/lib/types'
 
-const requestSchema = z.object({
-  startDate: z.string().refine(isValidDate, {
-    message: 'Date de début invalide'
-  }),
-  endDate: z.string().refine(isValidDate, {
-    message: 'Date de fin invalide'
-  })
-})
-
-export async function POST(req: NextRequest) {
+export const POST = handleJsonRoute(async (json, req: NextRequest) => {
   try {
-    const limit = await rateLimit(req)
-    if (!limit.ok) {
-      return NextResponse.json({ error: TOO_MANY_REQUESTS }, { status: 429 })
-    }
     const session = await getSession(authOptions)
     const userId = session?.user.id
 
     if (!session || !userId) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
-    let body: unknown
-    try {
-      const parsedReq = await parseJsonBody(req)
-      if (!parsedReq.ok) {
-        return NextResponse.json(
-          { error: 'Type de média non pris en charge' },
-          { status: 415 }
-        )
-      }
-      body = parsedReq.data
-    } catch (err) {
-      if (err instanceof PayloadTooLargeError) {
-        return NextResponse.json({ error: PAYLOAD_TOO_LARGE }, { status: 413 })
-      }
-      if (err instanceof InvalidJsonError) {
-        return NextResponse.json({ error: JSON_INVALIDE }, { status: 400 })
-      }
-      throw err
-    }
-    const parsed = requestSchema.safeParse(body)
+
+    const parsed = requestSchema.safeParse(json)
     if (!parsed.success) {
       return NextResponse.json({ error: 'Entrée invalide' }, { status: 400 })
     }
@@ -74,7 +41,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get user profile
     const prisma = getPrisma()
     const profile = await prisma.profile.findUnique({
       where: { userId },
@@ -86,19 +52,17 @@ export async function POST(req: NextRequest) {
         }
       }
     })
-    
+
     if (!profile) {
       return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 })
     }
 
-    // Build prompt
     const prompt = buildMealPlanPrompt(
       { cuisineType: profile.cuisineType ?? undefined, appliances: profile.appliances },
       startDate,
       endDate
     )
 
-    // Generate meal plan
     const mealPlan = await generateMealPlan(prompt)
 
     if (!hasValidMealDates(mealPlan.days)) {
@@ -135,4 +99,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
-}
+})
