@@ -102,6 +102,22 @@ test('datesWithinRange rejects invalid dates', async () => {
   assert.equal(utils.datesWithinRange([{ date: 'invalid' }], '2024-01-01', '2024-01-02'), false)
 })
 
+test('datesWithinRange rejects inverted intervals', async () => {
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  assert.equal(utils.datesWithinRange(mealPlan.days, '2024-01-02', '2024-01-01'), false)
+})
+
+test('saveMealPlan throws on out-of-range plan', async () => {
+  const utils = await import(`../meal-plan?t=${Date.now()}`)
+  const prisma = getPrisma()
+  ;(prisma as any).$transaction = async () => {}
+  await assert.rejects(
+    () =>
+      utils.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-02', '2024-01-01'),
+    /Meal plan dates out of range/
+  )
+})
+
 test('returns 400 on invalid JSON', async () => {
   const session = await import(`../session?t=${Date.now()}`)
   session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))

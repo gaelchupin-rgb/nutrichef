@@ -80,3 +80,10 @@ npm test
 Le script de test définit automatiquement des valeurs fictives pour `DATABASE_URL`, `GOOGLE_API_KEY` et `GEMINI_MODEL`.
 
 > **Prérequis** : Node.js 20 ou supérieur est recommandé pour l'exécution des tests.
+
+## API et limitation de débit
+
+Les routes API renvoient des en-têtes de limitation de débit :
+
+- `X-RateLimit-Remaining` : nombre de requêtes restantes dans la fenêtre courante.
+- `Retry-After` : secondes à attendre avant de réessayer après un `429`.

@@ -4,6 +4,8 @@ import { getPrisma } from './db'
 import { compare } from 'bcryptjs'
 import { z } from 'zod'
 import { rateLimit } from './rate-limit'
+import { getIP } from './ip'
+import { logger } from './logger'
 
 const credentialsSchema = z.object({
   email: z.string().trim().email(),
@@ -22,7 +24,8 @@ export async function authorize(credentials: { email: string; password: string }
   try {
     isValid = await compare(credentials.password, user.password)
   } catch (error) {
-    console.error('Error comparing password:', error)
+    const ip = getIP(req)
+    logger.error({ err: error, userId: user.id, ip }, 'Error comparing password')
     return null
   }
   if (!isValid) return null

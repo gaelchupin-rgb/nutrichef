@@ -4,6 +4,21 @@ import extract from 'extract-json-from-string'
 import { jsonrepair } from 'jsonrepair'
 import { getEnv } from './config'
 import { mealPlanSchema, type MealPlan } from './meal-plan'
+import { logger } from './logger'
+
+export class GenerationError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options)
+    this.name = 'GenerationError'
+  }
+}
+
+export class NutritionError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options)
+    this.name = 'NutritionError'
+  }
+}
 
 let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
 
@@ -69,15 +84,15 @@ export async function generateMealPlan(prompt: string): Promise<MealPlan> {
     }
     return parsed.data
   } catch (error) {
-    console.error('Error generating meal plan:', error)
+    logger.error({ err: error }, 'Error generating meal plan')
     if (
       error instanceof Error &&
       (error.message === 'Invalid meal plan format' ||
         error.message === 'Gemini response too large')
     ) {
-      throw error
+      throw new GenerationError(error.message, { cause: error })
     }
-    throw new Error('Failed to generate meal plan')
+    throw new GenerationError('Failed to generate meal plan', { cause: error })
   }
 }
 
@@ -118,14 +133,14 @@ export async function analyzeNutrition(foodDescription: string): Promise<Nutriti
     }
     return parsed.data
   } catch (error) {
-    console.error('Error analyzing nutrition:', error)
+    logger.error({ err: error }, 'Error analyzing nutrition')
     if (
       error instanceof Error &&
       (error.message === 'Invalid nutrition analysis format' ||
         error.message === 'Gemini response too large')
     ) {
-      throw error
+      throw new NutritionError(error.message, { cause: error })
     }
-    throw new Error('Failed to analyze nutrition')
+    throw new NutritionError('Failed to analyze nutrition', { cause: error })
   }
 }

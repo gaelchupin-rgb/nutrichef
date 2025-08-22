@@ -48,6 +48,7 @@ export function datesWithinRange(
   if (!isValidDate(startDate) || !isValidDate(endDate)) return false
   const start = parseISO(startDate).getTime()
   const end = parseISO(endDate).getTime()
+  if (start > end) return false
   return days.every((day) => {
     if (!isValidDate(day.date)) return false
     const time = parseISO(day.date).getTime()
@@ -85,6 +86,9 @@ export async function saveMealPlan(
   startDate: string,
   endDate: string
 ) {
+  if (!datesWithinRange(validMealPlan.days, startDate, endDate)) {
+    throw new Error('Meal plan dates out of range')
+  }
   const prisma = getPrisma()
   return prisma.$transaction(async (tx) => {
     const plan = await tx.plan.create({
