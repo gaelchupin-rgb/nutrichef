@@ -3,16 +3,14 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { getPrisma } from './db'
 import { compare } from 'bcryptjs'
 import { z } from 'zod'
-import { rateLimitByIP } from '@/middleware/rate-limit'
-import { getIP } from './ip'
+import { rateLimit } from './rate-limit'
 
 const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8),
 })
 export async function authorize(credentials: { email: string; password: string }, req?: Request | any) {
-  const ip = getIP(req)
-  const limit = await rateLimitByIP(ip)
+  const limit = await rateLimit(req)
   if (!limit.ok) throw new Error('Too many attempts')
   const prisma = getPrisma()
   const email = credentials.email.trim().toLowerCase()

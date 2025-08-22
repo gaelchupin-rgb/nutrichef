@@ -1,10 +1,10 @@
 import Redis from 'ioredis'
-import { getRedisUrl } from './config'
+import { getEnv } from './config'
 
 let client: Redis | null = null
 
 export function getRedis() {
-  const url = getRedisUrl()
+  const { REDIS_URL: url } = getEnv()
   if (!url) return null
   if (!client) {
     try {

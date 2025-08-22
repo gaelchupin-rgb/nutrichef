@@ -8,28 +8,11 @@ const envSchema = z.object({
   MAX_STORE_COMBINATIONS: z.coerce.number().int().positive().default(100000),
 })
 
-const env = envSchema.parse(process.env)
+let env: z.infer<typeof envSchema>
 
-export function getDatabaseUrl() {
-  if (!env.DATABASE_URL) throw new Error('DATABASE_URL is required')
-  try {
-    new URL(env.DATABASE_URL)
-  } catch {
-    throw new Error('DATABASE_URL is invalid')
+export function getEnv() {
+  if (!env) {
+    env = envSchema.parse(process.env)
   }
-  return env.DATABASE_URL
-}
-
-export function getRedisUrl() {
-  return env.REDIS_URL
-}
-
-export function getGeminiConfig() {
-  if (!env.GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY is required')
-  if (!env.GEMINI_MODEL) throw new Error('GEMINI_MODEL is required')
-  return { apiKey: env.GOOGLE_API_KEY, model: env.GEMINI_MODEL }
-}
-
-export function getMaxStoreCombinations() {
-  return env.MAX_STORE_COMBINATIONS
+  return env
 }

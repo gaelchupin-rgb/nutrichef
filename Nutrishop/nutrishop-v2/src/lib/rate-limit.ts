@@ -1,6 +1,6 @@
-import { NextRequest } from 'next/server'
-import { getRedis } from '@/lib/redis'
-import { getIP } from '@/lib/ip'
+import type { NextRequest } from 'next/server'
+import { getRedis } from './redis'
+import { getIP } from './ip'
 
 interface RateRecord {
   count: number
@@ -65,7 +65,7 @@ export async function rateLimitByIP(
 }
 
 export async function rateLimit(
-  req: NextRequest,
+  req?: Request | NextRequest,
   limit: number = MAX_REQUESTS,
   windowMs: number = WINDOW_MS
 ) {

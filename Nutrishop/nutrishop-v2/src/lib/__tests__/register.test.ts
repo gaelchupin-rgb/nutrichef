@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs'
 import { getPrisma } from '../db'
 const prisma = getPrisma()
 import { Prisma } from '@prisma/client'
-import { store, rateLimitByIP } from '../../middleware/rate-limit'
+import { store, rateLimitByIP } from '../rate-limit'
+import { DEFAULT_MAX_JSON_SIZE } from '../api-utils'
 
 const requestBody = {
   email: 'a@a.com',
@@ -154,7 +155,7 @@ test('returns 415 on invalid Content-Type', async () => {
 test('returns 413 on payload too large', async () => {
   store.clear()
   const { POST } = await import('../../app/api/auth/register/route')
-  const large = 'a'.repeat(1_000_001)
+  const large = 'a'.repeat(DEFAULT_MAX_JSON_SIZE + 1)
   const req = new Request('http://test', {
     method: 'POST',
     body: large,

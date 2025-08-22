@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { z } from 'zod'
 import extract from 'extract-json-from-string'
 import { jsonrepair } from 'jsonrepair'
-import { getGeminiConfig } from './config'
+import { getEnv } from './config'
 import { mealPlanSchema, type MealPlan } from './meal-plan'
 
 let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
@@ -17,9 +17,11 @@ export function setModel(
 
 function getModel() {
   if (!model) {
-    const { apiKey, model: modelName } = getGeminiConfig()
-    const genAI = new GoogleGenerativeAI(apiKey)
-    model = genAI.getGenerativeModel({ model: modelName })
+    const { GOOGLE_API_KEY, GEMINI_MODEL } = getEnv()
+    if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY is required')
+    if (!GEMINI_MODEL) throw new Error('GEMINI_MODEL is required')
+    const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY)
+    model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
   }
   return model
 }

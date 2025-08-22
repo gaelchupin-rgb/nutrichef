@@ -1,4 +1,4 @@
-import { getMaxStoreCombinations } from './config'
+import { getEnv } from './config'
 
 export interface ShoppingNeed {
   id: string
@@ -48,7 +48,7 @@ export interface OptimizationResult {
   recommendations: string[]
 }
 
-export const MAX_STORE_COMBINATIONS = getMaxStoreCombinations()
+export const MAX_STORE_COMBINATIONS = getEnv().MAX_STORE_COMBINATIONS
 
 // Convertir les unités en unités de base pour la comparaison
 const weightUnits: Record<string, number> = {
