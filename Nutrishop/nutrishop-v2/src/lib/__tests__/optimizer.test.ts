@@ -6,6 +6,8 @@ import {
   filterOutliers,
   normalizeToBaseUnit,
   namesMatch,
+  optimizeShopping,
+  UnknownUnitError,
 } from '../optimizer'
 
 test('generateCombinations returns all combinations', () => {
@@ -99,6 +101,27 @@ test('normalizeToBaseUnit trims whitespace', () => {
   const kg = normalizeToBaseUnit(1, ' kg ')!
   assert.equal(kg.baseUnit, 'g')
   assert.equal(kg.value, 1000)
+})
+
+test('normalizeToBaseUnit returns error for unknown units', () => {
+  const res = normalizeToBaseUnit(1, 'unknown')
+  assert.ok(res instanceof UnknownUnitError)
+})
+
+test('optimizeShopping throws on unknown unit', () => {
+  const needs = [{ id: '1', name: 'a', quantity: 1, unit: 'unknown' }]
+  const offers = [
+    {
+      storeId: 's1',
+      productId: 'p',
+      storeName: 'S1',
+      productName: 'a',
+      price: 1,
+      unit: 'unit',
+      quantity: 1,
+    },
+  ]
+  assert.throws(() => optimizeShopping(needs, offers), UnknownUnitError)
 })
 
 test('namesMatch handles token order and minor differences', () => {

@@ -1,5 +1,12 @@
 import { getEnv } from './config'
 
+export class UnknownUnitError extends Error {
+  constructor(unit: string) {
+    super(`Unknown unit: ${unit}`)
+    this.name = 'UnknownUnitError'
+  }
+}
+
 export interface ShoppingNeed {
   id: string
   name: string
@@ -113,7 +120,7 @@ const unitUnits = new Set([
 export function normalizeToBaseUnit(
   value: number,
   unit: string
-): { value: number; baseUnit: string } | null {
+): { value: number; baseUnit: string } | UnknownUnitError {
   const normalizedUnit = unit.trim().toLowerCase()
 
   if (normalizedUnit in weightUnits) {
@@ -128,14 +135,13 @@ export function normalizeToBaseUnit(
     return { value, baseUnit: 'unit' }
   }
 
-  console.warn(`Unknown unit: ${unit}`)
-  return null
+  return new UnknownUnitError(unit)
 }
 
 // Calculer le prix par unité de base
-function getPricePerBaseUnit(offer: StoreOffer): number | null {
+function getPricePerBaseUnit(offer: StoreOffer): number | UnknownUnitError | null {
   const normalized = normalizeToBaseUnit(offer.quantity, offer.unit)
-  if (!normalized) return null
+  if (normalized instanceof UnknownUnitError) return normalized
   const { value: baseQuantity } = normalized
   const price = offer.isPromo && offer.promoPrice ? offer.promoPrice : offer.price
 
@@ -148,7 +154,7 @@ function getPricePerBaseUnit(offer: StoreOffer): number | null {
 export function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
   // Grouper par produit normalisé
   const productGroups = new Map<string, StoreOffer[]>()
-  
+
   offers.forEach(offer => {
     const normalizedProduct = offer.productName.toLowerCase().trim()
     if (!productGroups.has(normalizedProduct)) {
@@ -167,10 +173,15 @@ export function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
     }
     
     // Calculer les prix par unité de base
-    const prices = groupOffers
-      .map(offer => getPricePerBaseUnit(offer))
-      .filter((p): p is number => p !== null)
-    
+    const prices: number[] = []
+    for (const offer of groupOffers) {
+      const price = getPricePerBaseUnit(offer)
+      if (price instanceof UnknownUnitError) {
+        throw price
+      }
+      if (price !== null) prices.push(price)
+    }
+
     if (prices.length === 0) return
     
     // Calculer Q1 et Q3
@@ -188,6 +199,9 @@ export function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
     // Filtrer les offres
     groupOffers.forEach((offer) => {
       const price = getPricePerBaseUnit(offer)
+      if (price instanceof UnknownUnitError) {
+        throw price
+      }
       if (price !== null && price >= lowerBound && price <= upperBound) {
         filteredOffers.push(offer)
       }
@@ -346,7 +360,7 @@ function evaluateCombination(
 
     // Normaliser le besoin
     const needNormalized = normalizeToBaseUnit(need.quantity, need.unit)
-    if (!needNormalized) continue
+    if (needNormalized instanceof UnknownUnitError) throw needNormalized
     const { value: neededQuantity, baseUnit: neededUnit } = needNormalized
 
     // Chercher dans chaque magasin
@@ -360,7 +374,7 @@ function evaluateCombination(
         }
 
         const offerNormalized = normalizeToBaseUnit(offer.quantity, offer.unit)
-        if (!offerNormalized) continue
+        if (offerNormalized instanceof UnknownUnitError) throw offerNormalized
         const { value: offerQuantity, baseUnit: offerUnit } = offerNormalized
 
         if (offerUnit === neededUnit && offerQuantity > 0) {
@@ -382,7 +396,8 @@ function evaluateCombination(
       const price = bestOffer!.isPromo && bestOffer!.promoPrice ? bestOffer!.promoPrice : bestOffer!.price
       const originalPrice = bestOffer!.price
       const offerNormalized = normalizeToBaseUnit(bestOffer!.quantity, bestOffer!.unit)
-      const unitQuantity = offerNormalized ? offerNormalized.value : 1
+      const unitQuantity =
+        offerNormalized instanceof UnknownUnitError ? 1 : offerNormalized.value
       const quantity = Math.ceil(neededQuantity / unitQuantity)
 
       items[bestStoreIndex].items.push({

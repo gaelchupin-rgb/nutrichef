@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
 import { getPrisma } from '@/lib/db'
-import { generateMealPlan } from '@/lib/gemini'
+import { generateMealPlan, GenerationError } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
@@ -9,6 +9,7 @@ import { datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
 import { getSession } from '@/lib/session'
 import { handleJsonRoute } from '@/lib/api-handler'
 import { requestSchema } from '@/lib/types'
+import { logger } from '@/lib/logger'
 
 export const POST = handleJsonRoute(async (json, req: NextRequest) => {
   try {
@@ -87,12 +88,14 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
       mealPlan
     })
   } catch (error) {
-    console.error('Erreur lors de la génération du plan repas:', error)
-    if (error instanceof Error && error.message === 'Invalid meal plan format') {
-      return NextResponse.json(
-        { error: 'Format du plan repas invalide' },
-        { status: 500 }
-      )
+    logger.error({ err: error }, 'Erreur lors de la génération du plan repas')
+    if (error instanceof GenerationError) {
+      const map: Record<string, string> = {
+        'Invalid meal plan format': 'Format du plan repas invalide',
+        'Gemini response too large': 'Réponse Gemini trop volumineuse',
+      }
+      const message = map[error.message] || 'Échec de la génération du plan repas'
+      return NextResponse.json({ error: message }, { status: 500 })
     }
     return NextResponse.json(
       { error: 'Échec de la génération du plan repas' },

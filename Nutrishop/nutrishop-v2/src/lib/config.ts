@@ -5,7 +5,7 @@ const envSchema = z.object({
   REDIS_URL: z.string().optional(),
   GOOGLE_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().optional(),
-  MAX_STORE_COMBINATIONS: z.coerce.number().int().positive().default(100000),
+  MAX_STORE_COMBINATIONS: z.coerce.number().int().positive().default(5000),
 })
 
 let env: z.infer<typeof envSchema>

@@ -14,15 +14,22 @@ export function handleJsonRoute<T>(
 ) {
   return async (req: NextRequest) => {
     const limit = await rateLimit(req)
+    const retryAfter = Math.ceil((limit.reset - Date.now()) / 1000)
     if (!limit.ok) {
-      return NextResponse.json({ error: TOO_MANY_REQUESTS }, { status: 429 })
+      const res = NextResponse.json({ error: TOO_MANY_REQUESTS }, { status: 429 })
+      res.headers.set('X-RateLimit-Remaining', String(limit.remaining))
+      res.headers.set('Retry-After', String(retryAfter))
+      return res
     }
     try {
       const parsedReq = await parseJsonBody<T>(req)
       if (!parsedReq.ok) {
         return NextResponse.json({ error: 'Content-Type invalide' }, { status: 415 })
       }
-      return await handler(parsedReq.data, req)
+      const res = await handler(parsedReq.data, req)
+      res.headers.set('X-RateLimit-Remaining', String(limit.remaining))
+      res.headers.set('Retry-After', String(retryAfter))
+      return res
     } catch (err) {
       if (err instanceof PayloadTooLargeError) {
         return NextResponse.json({ error: PAYLOAD_TOO_LARGE }, { status: 413 })

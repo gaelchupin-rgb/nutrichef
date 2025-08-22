@@ -11,3 +11,19 @@ test('throws when combinations exceed limit', async () => {
   ]
   assert.throws(() => optimizeShopping(needs, offers, 2), /Too many store combinations/)
 })
+
+test('default combination limit is enforced', async () => {
+  delete process.env.MAX_STORE_COMBINATIONS
+  const { optimizeShopping } = await import(`../optimizer?t=${Date.now()}`)
+  const needs = [{ id: '1', name: 'a', quantity: 1, unit: 'unit' }]
+  const offers = Array.from({ length: 13 }, (_, i) => ({
+    storeId: `s${i}`,
+    productId: 'p',
+    storeName: `S${i}`,
+    productName: 'a',
+    price: 1,
+    unit: 'unit',
+    quantity: 1,
+  }))
+  assert.throws(() => optimizeShopping(needs, offers, 13), /Too many store combinations/)
+})
