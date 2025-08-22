@@ -61,6 +61,7 @@ model Recipe {
   user         User     @relation(fields: [userId], references: [id])
   userId       String
   menuItems    MenuItem[]
+  ingredients  RecipeIngredient[]
 
   @@unique([userId, name])
 }
@@ -72,6 +73,7 @@ model Plan {
   startDate DateTime
   endDate   DateTime
   menuItems MenuItem[]
+  shoppingList ShoppingList?
 }
 
 model MenuItem {
@@ -82,4 +84,39 @@ model MenuItem {
   mealType String
   recipe   Recipe  @relation(fields: [recipeId], references: [id])
   recipeId String
+}
+
+model Ingredient {
+  id                String              @id @default(cuid())
+  name              String              @unique
+  category          String?
+  recipeIngredients RecipeIngredient[]
+  shoppingListItems ShoppingListItem[]
+}
+
+model RecipeIngredient {
+  id           String     @id @default(cuid())
+  recipe       Recipe     @relation(fields: [recipeId], references: [id])
+  recipeId     String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  ingredientId String
+  quantity     Float
+  unit         String?
+}
+
+model ShoppingList {
+  id      String             @id @default(cuid())
+  plan    Plan               @relation(fields: [planId], references: [id])
+  planId  String             @unique
+  items   ShoppingListItem[]
+}
+
+model ShoppingListItem {
+  id             String        @id @default(cuid())
+  shoppingList   ShoppingList  @relation(fields: [shoppingListId], references: [id])
+  shoppingListId String
+  ingredient     Ingredient    @relation(fields: [ingredientId], references: [id])
+  ingredientId   String
+  quantity       Float
+  unit           String?
 }
