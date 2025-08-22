@@ -3,6 +3,7 @@ import { z } from 'zod'
 import extract from 'extract-json-from-string'
 import { jsonrepair } from 'jsonrepair'
 import { getGeminiConfig } from './config'
+import { mealPlanSchema, type MealPlan } from './meal-plan'
 
 let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
 
@@ -51,7 +52,7 @@ export function parseMealPlanResponse(text: string) {
   throw new Error('Invalid meal plan format')
 }
 
-export async function generateMealPlan(prompt: string) {
+export async function generateMealPlan(prompt: string): Promise<MealPlan> {
   try {
     const result = await getModel().generateContent(prompt)
     const response = await result.response
@@ -59,7 +60,12 @@ export async function generateMealPlan(prompt: string) {
     if (text.length > MAX_RESPONSE_LENGTH) {
       throw new Error('Gemini response too large')
     }
-    return parseMealPlanResponse(text)
+    const data = parseMealPlanResponse(text)
+    const parsed = mealPlanSchema.safeParse(data)
+    if (!parsed.success) {
+      throw new Error('Invalid meal plan format')
+    }
+    return parsed.data
   } catch (error) {
     console.error('Error generating meal plan:', error)
     if (
@@ -83,7 +89,9 @@ const nutritionSchema = z.object({
   sodium: z.number(),
 })
 
-export async function analyzeNutrition(foodDescription: string) {
+export type NutritionAnalysis = z.infer<typeof nutritionSchema>
+
+export async function analyzeNutrition(foodDescription: string): Promise<NutritionAnalysis> {
   const prompt =
     `Analyse la valeur nutritionnelle de ce plat: "${foodDescription}". ` +
     `Réponds au format JSON avec les champs: kcal, protein (g), carbs (g), fat (g), fiber (g), sugar (g), sodium (mg).`

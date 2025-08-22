@@ -6,10 +6,10 @@ import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates, isValidDate } from '@/lib/date-utils'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { z } from 'zod'
-import { mealPlanSchema, datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
+import { datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
 import { getSession } from '@/lib/session'
 import { rateLimit } from '@/middleware/rate-limit'
-import { readJsonBody } from '@/lib/http'
+import { parseJsonRequest } from '@/lib/http'
 import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE } from '@/lib/errors'
 
 const requestSchema = z.object({
@@ -27,12 +27,8 @@ export async function POST(req: NextRequest) {
     if (!limit.ok) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
-    const contentType = req.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) {
-      return NextResponse.json({ error: 'Type de média non pris en charge' }, { status: 415 })
-    }
     const session = await getSession(authOptions)
-    const userId = (session?.user as { id: string } | undefined)?.id
+    const userId = session?.user.id
 
     if (!session || !userId) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
@@ -40,7 +36,14 @@ export async function POST(req: NextRequest) {
     const maxBody = 1_000_000
     let body: unknown
     try {
-      body = await readJsonBody(req, maxBody)
+      const parsedReq = await parseJsonRequest(req, maxBody)
+      if (!parsedReq.ok) {
+        return NextResponse.json(
+          { error: 'Type de média non pris en charge' },
+          { status: 415 }
+        )
+      }
+      body = parsedReq.data
     } catch (err) {
       if (err instanceof PayloadTooLargeError) {
         return NextResponse.json({ error: PAYLOAD_TOO_LARGE }, { status: 413 })
@@ -98,25 +101,17 @@ export async function POST(req: NextRequest) {
 
     // Generate meal plan
     const mealPlan = await generateMealPlan(prompt)
-    const parsedPlan = mealPlanSchema.safeParse(mealPlan)
-    if (!parsedPlan.success) {
-      return NextResponse.json(
-        { error: 'Format du plan repas invalide' },
-        { status: 500 }
-      )
-    }
-    const validMealPlan = parsedPlan.data
 
-    if (!hasValidMealDates(validMealPlan.days)) {
+    if (!hasValidMealDates(mealPlan.days)) {
       return NextResponse.json({ error: 'Date de repas invalide' }, { status: 400 })
     }
 
-    if (!datesWithinRange(validMealPlan.days, startDate, endDate)) {
+    if (!datesWithinRange(mealPlan.days, startDate, endDate)) {
       return NextResponse.json({ error: 'Date de repas invalide' }, { status: 400 })
     }
 
     const plan = await saveMealPlan(
-      validMealPlan,
+      mealPlan,
       { cuisineType: profile.cuisineType ?? undefined },
       userId,
       startDate,
@@ -126,7 +121,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       planId: plan.id,
-      mealPlan: validMealPlan
+      mealPlan
     })
   } catch (error) {
     console.error('Erreur lors de la génération du plan repas:', error)

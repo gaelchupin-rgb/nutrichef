@@ -38,6 +38,8 @@ export const mealPlanSchema = z.object({
   ),
 })
 
+export type MealPlan = z.infer<typeof mealPlanSchema>
+
 export function datesWithinRange(
   days: Array<{ date: string }>,
   startDate: string,

@@ -4,7 +4,7 @@ import { getPrisma } from '@/lib/db'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { rateLimit } from '@/middleware/rate-limit'
-import { readJsonBody } from '@/lib/http'
+import { parseJsonRequest } from '@/lib/http'
 import { PayloadTooLargeError, InvalidJsonError, PAYLOAD_TOO_LARGE, JSON_INVALIDE } from '@/lib/errors'
 
 const registerSchema = z.object({
@@ -25,14 +25,14 @@ export async function POST(request: NextRequest) {
     if (!limit.ok) {
       return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 })
     }
-    const contentType = request.headers.get('content-type') || ''
-    if (!contentType.includes('application/json')) {
-      return NextResponse.json({ error: 'Content-Type invalide' }, { status: 415 })
-    }
     const maxBody = 1_000_000
     let json: unknown
     try {
-      json = await readJsonBody(request, maxBody)
+      const parsedReq = await parseJsonRequest(request, maxBody)
+      if (!parsedReq.ok) {
+        return NextResponse.json({ error: 'Content-Type invalide' }, { status: 415 })
+      }
+      json = parsedReq.data
     } catch (err) {
       if (err instanceof PayloadTooLargeError) {
         return NextResponse.json({ error: PAYLOAD_TOO_LARGE }, { status: 413 })

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { rateLimit, store, cleanup } from '../../middleware/rate-limit'
+import { rateLimit, rateLimitByIP, store, cleanup } from '../../middleware/rate-limit'
 
 test('rateLimit blocks after threshold', async () => {
   store.clear()
@@ -10,6 +10,17 @@ test('rateLimit blocks after threshold', async () => {
     assert.ok(res.ok)
   }
   const res = await rateLimit(req as any)
+  assert.ok(!res.ok)
+})
+
+test('rateLimitByIP works without request', async () => {
+  store.clear()
+  const ip = '203.0.113.9'
+  for (let i = 0; i < 5; i++) {
+    const res = await rateLimitByIP(ip)
+    assert.ok(res.ok)
+  }
+  const res = await rateLimitByIP(ip)
   assert.ok(!res.ok)
 })
 
