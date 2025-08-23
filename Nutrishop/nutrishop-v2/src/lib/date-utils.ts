@@ -9,7 +9,9 @@ export function isValidDate(date: string) {
 }
 
 export function isValidDateRange(start: string, end: string) {
-  return isValidDate(start) && isValidDate(end) && new Date(start) <= new Date(end)
+  return (
+    isValidDate(start) && isValidDate(end) && new Date(start) <= new Date(end)
+  )
 }
 
 export function hasValidMealDates(days: Array<{ date: string }>) {

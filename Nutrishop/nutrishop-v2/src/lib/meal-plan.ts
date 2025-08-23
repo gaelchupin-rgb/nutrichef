@@ -32,9 +32,9 @@ export const mealPlanSchema = z.object({
             sugar: z.coerce.number(),
             sodium: z.coerce.number(),
           }),
-        })
+        }),
       ),
-    })
+    }),
   ),
 })
 
@@ -43,7 +43,7 @@ export type MealPlan = z.infer<typeof mealPlanSchema>
 export function datesWithinRange(
   days: Array<{ date: string }>,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) {
   if (!isValidDate(startDate) || !isValidDate(endDate)) return false
   const start = parseISO(startDate).getTime()
@@ -84,7 +84,7 @@ export async function saveMealPlan(
   profile: MealPlanProfile,
   userId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) {
   if (!datesWithinRange(validMealPlan.days, startDate, endDate)) {
     throw new Error('Meal plan dates out of range')
@@ -139,4 +139,3 @@ export async function saveMealPlan(
     return plan
   })
 }
-

@@ -19,7 +19,7 @@ export class ApiError extends Error {
 
 export async function readJsonBody<T>(
   req: NextRequest,
-  maxBytes: number
+  maxBytes: number,
 ): Promise<T> {
   const reader = req.body?.getReader()
   if (!reader) {
@@ -45,10 +45,7 @@ export async function readJsonBody<T>(
   }
 }
 
-export async function parseJsonRequest<T>(
-  req: NextRequest,
-  maxBytes: number
-) {
+export async function parseJsonRequest<T>(req: NextRequest, maxBytes: number) {
   const contentType = req.headers.get('content-type') || ''
   if (!contentType.includes('application/json')) {
     return { ok: false as const }
@@ -59,7 +56,7 @@ export async function parseJsonRequest<T>(
 
 export async function fetchJson<T>(
   input: RequestInfo | URL,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<T> {
   const res = await fetch(input, init)
   const contentType = res.headers.get('content-type') || ''

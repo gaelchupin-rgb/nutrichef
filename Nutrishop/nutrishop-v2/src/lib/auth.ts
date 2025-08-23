@@ -11,13 +11,16 @@ const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8),
 })
-export async function authorize(credentials: { email: string; password: string }, req?: Request | any) {
+export async function authorize(
+  credentials: { email: string; password: string },
+  req?: Request | any,
+) {
   const limit = await rateLimit(req)
   if (!limit.ok) throw new Error('Too many attempts')
   const prisma = getPrisma()
   const email = credentials.email.trim().toLowerCase()
   const user = await prisma.user.findUnique({
-    where: { email }
+    where: { email },
   })
   if (!user) return null
   let isValid = false
@@ -25,7 +28,10 @@ export async function authorize(credentials: { email: string; password: string }
     isValid = await compare(credentials.password, user.password)
   } catch (error) {
     const ip = getIP(req)
-    logger.error({ err: error, userId: user.id, ip }, 'Error comparing password')
+    logger.error(
+      { err: error, userId: user.id, ip },
+      'Error comparing password',
+    )
     return null
   }
   if (!isValid) return null
@@ -38,14 +44,14 @@ export const authOptions: NextAuthOptions = {
       name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(rawCredentials, req) {
         const parsed = credentialsSchema.safeParse(rawCredentials)
         if (!parsed.success) return null
         return authorize(parsed.data, req)
-      }
-    })
+      },
+    }),
   ],
   session: { strategy: 'jwt' },
   callbacks: {
@@ -58,6 +64,6 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
       }
       return session
-    }
-  }
+    },
+  },
 }

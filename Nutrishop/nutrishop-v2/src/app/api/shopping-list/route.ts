@@ -6,7 +6,7 @@ import { handleJsonRoute } from '@/lib/api-handler'
 import { generateShoppingList } from '@/lib/shopping-list'
 
 const requestSchema = z.object({
-  planId: z.string()
+  planId: z.string(),
 })
 
 export const POST = handleJsonRoute(async (json) => {
@@ -29,11 +29,13 @@ export const POST = handleJsonRoute(async (json) => {
       name: i.ingredient.name,
       quantity: i.quantity,
       unit: i.unit,
-      category: i.ingredient.category
+      category: i.ingredient.category,
     }))
     return NextResponse.json({ items })
   } catch (err) {
-    return NextResponse.json({ error: 'Échec de la génération' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Échec de la génération' },
+      { status: 500 },
+    )
   }
 })
-

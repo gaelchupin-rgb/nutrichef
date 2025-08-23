@@ -119,7 +119,7 @@ const unitUnits = new Set([
 
 export function normalizeToBaseUnit(
   value: number,
-  unit: string
+  unit: string,
 ): { value: number; baseUnit: string } | UnknownUnitError {
   const normalizedUnit = unit.trim().toLowerCase()
 
@@ -139,11 +139,14 @@ export function normalizeToBaseUnit(
 }
 
 // Calculer le prix par unité de base
-function getPricePerBaseUnit(offer: StoreOffer): number | UnknownUnitError | null {
+function getPricePerBaseUnit(
+  offer: StoreOffer,
+): number | UnknownUnitError | null {
   const normalized = normalizeToBaseUnit(offer.quantity, offer.unit)
   if (normalized instanceof UnknownUnitError) return normalized
   const { value: baseQuantity } = normalized
-  const price = offer.isPromo && offer.promoPrice ? offer.promoPrice : offer.price
+  const price =
+    offer.isPromo && offer.promoPrice ? offer.promoPrice : offer.price
 
   if (baseQuantity <= 0) return null
 
@@ -155,23 +158,23 @@ export function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
   // Grouper par produit normalisé
   const productGroups = new Map<string, StoreOffer[]>()
 
-  offers.forEach(offer => {
+  offers.forEach((offer) => {
     const normalizedProduct = offer.productName.toLowerCase().trim()
     if (!productGroups.has(normalizedProduct)) {
       productGroups.set(normalizedProduct, [])
     }
     productGroups.get(normalizedProduct)!.push(offer)
   })
-  
+
   const filteredOffers: StoreOffer[] = []
-  
+
   productGroups.forEach((groupOffers) => {
     if (groupOffers.length < 3) {
       // Pas assez d'offres pour détecter les outliers, on garde tout
       filteredOffers.push(...groupOffers)
       return
     }
-    
+
     // Calculer les prix par unité de base
     const prices: number[] = []
     for (const offer of groupOffers) {
@@ -183,19 +186,19 @@ export function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
     }
 
     if (prices.length === 0) return
-    
+
     // Calculer Q1 et Q3
     const sortedPrices = [...prices].sort((a, b) => a - b)
     const q1Index = Math.floor(sortedPrices.length * 0.25)
     const q3Index = Math.floor(sortedPrices.length * 0.75)
     const q1 = sortedPrices[q1Index]
     const q3 = sortedPrices[q3Index]
-    
+
     // Calculer l'IQR et les bornes
     const iqr = q3 - q1
     const lowerBound = q1 - 1.5 * iqr
     const upperBound = q3 + 1.5 * iqr
-    
+
     // Filtrer les offres
     groupOffers.forEach((offer) => {
       const price = getPricePerBaseUnit(offer)
@@ -207,13 +210,13 @@ export function filterOutliers(offers: StoreOffer[]): StoreOffer[] {
       }
     })
   })
-  
+
   return filteredOffers
 }
 
 function levenshtein(a: string, b: string): number {
   const matrix = Array.from({ length: a.length + 1 }, () =>
-    Array(b.length + 1).fill(0)
+    Array(b.length + 1).fill(0),
   )
   for (let i = 0; i <= a.length; i++) matrix[i][0] = i
   for (let j = 0; j <= b.length; j++) matrix[0][j] = j
@@ -223,7 +226,7 @@ function levenshtein(a: string, b: string): number {
       matrix[i][j] = Math.min(
         matrix[i - 1][j] + 1,
         matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost
+        matrix[i - 1][j - 1] + cost,
       )
     }
   }
@@ -247,20 +250,20 @@ export function namesMatch(a: string, b: string): boolean {
 function findBestStoreCombination(
   needs: ShoppingNeed[],
   offers: StoreOffer[],
-  maxStores: number = 3
+  maxStores: number = 3,
 ): OptimizationResult {
   // Filtrer les offres aberrantes
   const validOffers = filterOutliers(offers)
-  
+
   // Grouper les offres par magasin
   const storeOffers = new Map<string, StoreOffer[]>()
-  validOffers.forEach(offer => {
+  validOffers.forEach((offer) => {
     if (!storeOffers.has(offer.storeId)) {
       storeOffers.set(offer.storeId, [])
     }
     storeOffers.get(offer.storeId)!.push(offer)
   })
-  
+
   // Générer toutes les combinaisons possibles de magasins
   const storeIds = Array.from(storeOffers.keys())
   const combinations: string[][] = []
@@ -271,7 +274,7 @@ function findBestStoreCombination(
       throw new Error('Too many store combinations')
     }
   }
-  
+
   let bestResult: Omit<OptimizationResult, 'recommendations'> | null = null
   let bestCost = Infinity
 
@@ -290,7 +293,7 @@ function findBestStoreCombination(
       items: [],
       total: 0,
       savings: 0,
-      recommendations: ['Aucune combinaison de magasins trouvée']
+      recommendations: ['Aucune combinaison de magasins trouvée'],
     }
   }
 
@@ -299,7 +302,7 @@ function findBestStoreCombination(
 
   return {
     ...bestResult,
-    recommendations
+    recommendations,
   }
 }
 
@@ -309,7 +312,7 @@ export function generateCombinations(
   k: number,
   start: number,
   current: string[],
-  results: string[][]
+  results: string[][],
 ) {
   if (current.length === k) {
     results.push([...current])
@@ -328,30 +331,30 @@ export function generateCombinations(
 function evaluateCombination(
   needs: ShoppingNeed[],
   storeIds: string[],
-  storeOffers: Map<string, StoreOffer[]>
+  storeOffers: Map<string, StoreOffer[]>,
 ): Omit<OptimizationResult, 'recommendations'> {
   const storeMap = new Map<string, { name: string; distance?: number }>()
   const items: OptimizationResult['items'] = []
   let total = 0
   let savings = 0
-  
+
   // Initialiser les magasins
-  storeIds.forEach(storeId => {
+  storeIds.forEach((storeId) => {
     const firstOffer = storeOffers.get(storeId)?.[0]
     if (firstOffer) {
       storeMap.set(storeId, {
         name: firstOffer.storeName,
-        distance: firstOffer.distance
+        distance: firstOffer.distance,
       })
     }
     items.push({
       storeId,
       storeName: firstOffer?.storeName || 'Magasin inconnu',
       items: [],
-      total: 0
+      total: 0,
     })
   })
-  
+
   // Pour chaque besoin, trouver la meilleure offre dans les magasins sélectionnés
   for (const need of needs) {
     let bestOffer: StoreOffer | null = null
@@ -378,7 +381,8 @@ function evaluateCombination(
         const { value: offerQuantity, baseUnit: offerUnit } = offerNormalized
 
         if (offerUnit === neededUnit && offerQuantity > 0) {
-          const price = offer.isPromo && offer.promoPrice ? offer.promoPrice : offer.price
+          const price =
+            offer.isPromo && offer.promoPrice ? offer.promoPrice : offer.price
           const requiredPackages = Math.ceil(neededQuantity / offerQuantity)
           const totalPrice = price * requiredPackages
 
@@ -393,9 +397,15 @@ function evaluateCombination(
 
     // Ajouter l'offre au résultat
     if (bestOffer && bestStoreIndex >= 0) {
-      const price = bestOffer!.isPromo && bestOffer!.promoPrice ? bestOffer!.promoPrice : bestOffer!.price
+      const price =
+        bestOffer!.isPromo && bestOffer!.promoPrice
+          ? bestOffer!.promoPrice
+          : bestOffer!.price
       const originalPrice = bestOffer!.price
-      const offerNormalized = normalizeToBaseUnit(bestOffer!.quantity, bestOffer!.unit)
+      const offerNormalized = normalizeToBaseUnit(
+        bestOffer!.quantity,
+        bestOffer!.unit,
+      )
       const unitQuantity =
         offerNormalized instanceof UnknownUnitError ? 1 : offerNormalized.value
       const quantity = Math.ceil(neededQuantity / unitQuantity)
@@ -404,28 +414,32 @@ function evaluateCombination(
         need,
         offer: bestOffer!,
         quantity,
-        totalPrice: price * quantity
+        totalPrice: price * quantity,
       })
 
       items[bestStoreIndex].total += price * quantity
       total += price * quantity
 
       if (bestOffer!.isPromo) {
-        savings += (originalPrice - (bestOffer!.promoPrice ?? originalPrice)) * quantity
+        savings +=
+          (originalPrice - (bestOffer!.promoPrice ?? originalPrice)) * quantity
       }
     }
   }
-  
+
   // Préparer les informations des magasins
-  const stores = storeIds.map(storeId => {
+  const stores = storeIds.map((storeId) => {
     const storeInfo = storeMap.get(storeId)!
-    const storeItems = items.find(item => item.storeId === storeId)
+    const storeItems = items.find((item) => item.storeId === storeId)
     const storeTotal = storeItems?.total || 0
     const storeSavings = storeItems
       ? storeItems.items.reduce((sum, item) => {
-          return sum + (item.offer.isPromo && item.offer.promoPrice
-            ? (item.offer.price - item.offer.promoPrice) * item.quantity
-            : 0)
+          return (
+            sum +
+            (item.offer.isPromo && item.offer.promoPrice
+              ? (item.offer.price - item.offer.promoPrice) * item.quantity
+              : 0)
+          )
         }, 0)
       : 0
     return {
@@ -433,51 +447,62 @@ function evaluateCombination(
       name: storeInfo.name,
       distance: storeInfo.distance,
       total: storeTotal,
-      savings: storeSavings
+      savings: storeSavings,
     }
   })
-  
+
   return {
     stores,
     items,
     total,
-    savings
+    savings,
   }
 }
 
 // Générer des recommandations
-export function generateRecommendations(result: Omit<OptimizationResult, 'recommendations'>, needs: ShoppingNeed[]): string[] {
+export function generateRecommendations(
+  result: Omit<OptimizationResult, 'recommendations'>,
+  needs: ShoppingNeed[],
+): string[] {
   const recommendations: string[] = []
-  
+
   // Recommandations basées sur les économies
   if (result.savings > 0) {
-    recommendations.push(`Vous économisez ${result.savings.toFixed(2)}€ grâce aux promotions !`)
+    recommendations.push(
+      `Vous économisez ${result.savings.toFixed(2)}€ grâce aux promotions !`,
+    )
   }
-  
+
   // Recommandations basées sur le nombre de magasins
   if (result.stores.length > 1 && result.total > 0) {
-    recommendations.push(`Visiter ${result.stores.length} magasins vous permet d'économiser ${(result.savings / result.total * 100).toFixed(1)}%`)
+    recommendations.push(
+      `Visiter ${result.stores.length} magasins vous permet d'économiser ${((result.savings / result.total) * 100).toFixed(1)}%`,
+    )
   }
-  
+
   // Recommandations basées sur les produits manquants
-  const coveredNeeds = new Set(result.items.flatMap(store => 
-    store.items.map(item => item.need.id)
-  ))
-  const missingNeeds = needs.filter(need => !coveredNeeds.has(need.id))
-  
+  const coveredNeeds = new Set(
+    result.items.flatMap((store) => store.items.map((item) => item.need.id)),
+  )
+  const missingNeeds = needs.filter((need) => !coveredNeeds.has(need.id))
+
   if (missingNeeds.length > 0) {
-    recommendations.push(`${missingNeeds.length} produits n'ont pas été trouvés dans les magasins sélectionnés`)
+    recommendations.push(
+      `${missingNeeds.length} produits n'ont pas été trouvés dans les magasins sélectionnés`,
+    )
   }
-  
+
   // Recommandations basées sur la distance
   const maxDistance =
     result.stores.length > 0
-      ? Math.max(...result.stores.map(store => store.distance || 0))
+      ? Math.max(...result.stores.map((store) => store.distance || 0))
       : 0
   if (maxDistance > 5) {
-    recommendations.push(`Certains magasins sont à plus de ${maxDistance}km, envisagez la livraison`)
+    recommendations.push(
+      `Certains magasins sont à plus de ${maxDistance}km, envisagez la livraison`,
+    )
   }
-  
+
   return recommendations
 }
 
@@ -485,7 +510,7 @@ export function generateRecommendations(result: Omit<OptimizationResult, 'recomm
 export function optimizeShopping(
   needs: ShoppingNeed[],
   offers: StoreOffer[],
-  maxStores: number = 3
+  maxStores: number = 3,
 ): OptimizationResult {
   return findBestStoreCombination(needs, offers, maxStores)
 }
@@ -502,7 +527,7 @@ const FRESH_KEYWORDS = [
   'boeuf',
   'poisson',
   'fruit',
-  'légume'
+  'légume',
 ]
 
 export function classifyShoppingNeeds(needs: ShoppingNeed[]): {

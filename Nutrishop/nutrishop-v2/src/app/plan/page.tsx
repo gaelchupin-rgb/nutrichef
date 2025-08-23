@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
 import { fetchJson, ApiError } from '@/lib/http'
@@ -6,7 +6,11 @@ import { requestSchema } from '@/lib/types'
 import type { z } from 'zod'
 
 type PlanRequest = z.infer<typeof requestSchema>
-interface PlanResponse { success: boolean; planId: number; mealPlan: any }
+interface PlanResponse {
+  success: boolean
+  planId: number
+  mealPlan: any
+}
 
 export default function PlanPage() {
   const [form, setForm] = useState<PlanRequest>({ startDate: '', endDate: '' })
@@ -33,7 +37,7 @@ export default function PlanPage() {
       const data = await fetchJson<PlanResponse>('/api/ai/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       })
       setResult(data)
     } catch (err) {

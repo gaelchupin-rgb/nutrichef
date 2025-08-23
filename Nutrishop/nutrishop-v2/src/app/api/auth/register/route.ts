@@ -9,7 +9,9 @@ export const POST = handleJsonRoute(async (json, _req: NextRequest) => {
   try {
     const parsed = registerSchema.safeParse(json)
     if (!parsed.success) {
-      const passwordError = parsed.error.issues.find(i => i.path[0] === 'password')
+      const passwordError = parsed.error.issues.find(
+        (i) => i.path[0] === 'password',
+      )
       const message = passwordError
         ? 'Mot de passe invalide'
         : "Données d'inscription invalides"
@@ -32,13 +34,13 @@ export const POST = handleJsonRoute(async (json, _req: NextRequest) => {
             username,
             usernameNormalized,
             password: hashedPassword,
-          }
+          },
         })
 
         await tx.profile.create({
           data: {
             userId: user.id,
-          }
+          },
         })
       })
     } catch (error) {
@@ -47,8 +49,11 @@ export const POST = handleJsonRoute(async (json, _req: NextRequest) => {
         error.code === 'P2002'
       ) {
         return NextResponse.json(
-          { error: "Un utilisateur avec cet email ou ce nom d'utilisateur existe déjà" },
-          { status: 400 }
+          {
+            error:
+              "Un utilisateur avec cet email ou ce nom d'utilisateur existe déjà",
+          },
+          { status: 400 },
         )
       }
       throw error
@@ -58,7 +63,7 @@ export const POST = handleJsonRoute(async (json, _req: NextRequest) => {
     console.error("Erreur d'inscription:", error)
     return NextResponse.json(
       { error: "Une erreur est survenue lors de l'inscription" },
-      { status: 500 }
+      { status: 500 },
     )
   }
 })

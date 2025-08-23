@@ -9,15 +9,15 @@ export const registerSchema = z.object({
     .min(8)
     .regex(/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9])/, {
       message:
-        'Le mot de passe doit contenir au moins 8 caractères avec majuscule, minuscule, chiffre et symbole'
-    })
+        'Le mot de passe doit contenir au moins 8 caractères avec majuscule, minuscule, chiffre et symbole',
+    }),
 })
 
 export const requestSchema = z.object({
   startDate: z.string().refine(isValidDate, {
-    message: 'Date de début invalide'
+    message: 'Date de début invalide',
   }),
   endDate: z.string().refine(isValidDate, {
-    message: 'Date de fin invalide'
-  })
+    message: 'Date de fin invalide',
+  }),
 })

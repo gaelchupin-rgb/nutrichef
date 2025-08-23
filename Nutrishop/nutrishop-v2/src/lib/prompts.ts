@@ -8,7 +8,7 @@ import { mealPlanSchema, mealTypes } from './meal-plan'
 export function buildMealPlanPrompt(
   profile: Profile,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) {
   const applianceList =
     profile.appliances?.map((a) => a.appliance.name).join(', ') || 'none'

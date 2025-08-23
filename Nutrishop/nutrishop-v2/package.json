@@ -12,7 +12,8 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx src/lib/seed.ts",
     "type-check": "tsc --noEmit",
-    "test": "DATABASE_URL=postgresql://user:pass@localhost:5432/test GOOGLE_API_KEY=dummy GEMINI_MODEL=test-model node --test -r tsx src/lib/__tests__/*.test.ts"
+    "test": "DATABASE_URL=postgresql://user:pass@localhost:5432/test GOOGLE_API_KEY=dummy GEMINI_MODEL=test-model node --test -r tsx src/lib/__tests__/*.test.ts",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -36,6 +37,7 @@
     "lucide-react": "^0.294.0",
     "next": "14.2.32",
     "next-auth": "^4.24.5",
+    "pino": "^8.19.0",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.48.2",
@@ -43,8 +45,7 @@
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.22.4",
-    "zustand": "^4.4.7",
-    "pino": "^8.19.0"
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -55,6 +56,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.32",
     "postcss": "^8",
+    "prettier": "^3.6.2",
     "prisma": "^5.7.1",
     "tailwindcss": "^3.3.0",
     "tsx": "^4.6.2",
