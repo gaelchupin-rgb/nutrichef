@@ -59,14 +59,14 @@ test('parseMealPlanResponse rejects non-object JSON', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'
   const { parseMealPlanResponse } = await import(modulePath)
-  assert.throws(() => parseMealPlanResponse('42'), /Invalid meal plan format/)
+  assert.throws(() => parseMealPlanResponse('42'), /Format du plan repas invalide/)
 })
 
 test('parseMealPlanResponse rejects arrays', async () => {
   process.env.GOOGLE_API_KEY = 'test'
   process.env.GEMINI_MODEL = 'test-model'
   const { parseMealPlanResponse } = await import(modulePath)
-  assert.throws(() => parseMealPlanResponse('[1,2,3]'), /Invalid meal plan format/)
+  assert.throws(() => parseMealPlanResponse('[1,2,3]'), /Format du plan repas invalide/)
 })
 
 test('generateMealPlan parses model response', async () => {
@@ -107,7 +107,7 @@ test('analyzeNutrition rejects incomplete data', async () => {
     }) as any
   } as any
   setModel(mockModel)
-  await assert.rejects(() => analyzeNutrition('bad'), /Invalid nutrition analysis format/)
+  await assert.rejects(() => analyzeNutrition('bad'), /Format de l'analyse nutritionnelle invalide/)
   setModel(null)
 })
 
@@ -120,7 +120,7 @@ test('generateMealPlan rejects oversized responses', async () => {
     generateContent: async () => ({ response: { text: () => large } }) as any
   } as any
   setModel(mockModel)
-  await assert.rejects(() => generateMealPlan('prompt'), /Gemini response too large/)
+  await assert.rejects(() => generateMealPlan('prompt'), /Réponse Gemini trop volumineuse/)
   setModel(null)
 })
 
@@ -133,6 +133,6 @@ test('analyzeNutrition rejects oversized responses', async () => {
     generateContent: async () => ({ response: { text: () => large } }) as any
   } as any
   setModel(mockModel)
-  await assert.rejects(() => analyzeNutrition('food'), /Gemini response too large/)
+  await assert.rejects(() => analyzeNutrition('food'), /Réponse Gemini trop volumineuse/)
   setModel(null)
 })

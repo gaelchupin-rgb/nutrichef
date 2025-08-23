@@ -90,12 +90,7 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
   } catch (error) {
     logger.error({ err: error }, 'Erreur lors de la génération du plan repas')
     if (error instanceof GenerationError) {
-      const map: Record<string, string> = {
-        'Invalid meal plan format': 'Format du plan repas invalide',
-        'Gemini response too large': 'Réponse Gemini trop volumineuse',
-      }
-      const message = map[error.message] || 'Échec de la génération du plan repas'
-      return NextResponse.json({ error: message }, { status: 500 })
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
     return NextResponse.json(
       { error: 'Échec de la génération du plan repas' },
