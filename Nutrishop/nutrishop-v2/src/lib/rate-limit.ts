@@ -35,7 +35,7 @@ export async function rateLimitByIP(
   ip: string,
   key?: string,
   limit: number = MAX_REQUESTS,
-  windowMs: number = WINDOW_MS
+  windowMs: number = WINDOW_MS,
 ) {
   const now = Date.now()
   const redis = getRedis()
@@ -69,9 +69,11 @@ export async function rateLimitByIP(
 export async function rateLimit(
   req?: Request | NextRequest,
   limit: number = MAX_REQUESTS,
-  windowMs: number = WINDOW_MS
+  windowMs: number = WINDOW_MS,
 ) {
   const ip = getIP(req)
-  const pathname = (req as any)?.nextUrl?.pathname ?? (req ? new URL(req.url).pathname : undefined)
+  const pathname =
+    (req as any)?.nextUrl?.pathname ??
+    (req ? new URL(req.url).pathname : undefined)
   return rateLimitByIP(ip, pathname, limit, windowMs)
 }

@@ -8,10 +8,7 @@ export interface ShoppingListItemInput {
   category?: string | null
 }
 
-export async function generateShoppingList(
-  planId: string,
-  userId: string
-) {
+export async function generateShoppingList(planId: string, userId: string) {
   const prisma = getPrisma()
 
   const plan = await prisma.plan.findFirst({
@@ -22,13 +19,13 @@ export async function generateShoppingList(
           recipe: {
             include: {
               ingredients: {
-                include: { ingredient: true }
-              }
-            }
-          }
-        }
-      }
-    }
+                include: { ingredient: true },
+              },
+            },
+          },
+        },
+      },
+    },
   })
 
   if (!plan) throw new Error('Plan not found')
@@ -47,7 +44,7 @@ export async function generateShoppingList(
           name: ri.ingredient.name,
           quantity: ri.quantity,
           unit: ri.unit,
-          category: ri.ingredient.category
+          category: ri.ingredient.category,
         })
       }
     }
@@ -61,9 +58,9 @@ export async function generateShoppingList(
         create: Array.from(aggregated.values()).map((i) => ({
           ingredientId: i.ingredientId,
           quantity: i.quantity,
-          unit: i.unit
-        }))
-      }
+          unit: i.unit,
+        })),
+      },
     },
     create: {
       planId,
@@ -71,13 +68,13 @@ export async function generateShoppingList(
         create: Array.from(aggregated.values()).map((i) => ({
           ingredientId: i.ingredientId,
           quantity: i.quantity,
-          unit: i.unit
-        }))
-      }
+          unit: i.unit,
+        })),
+      },
     },
     include: {
-      items: { include: { ingredient: true } }
-    }
+      items: { include: { ingredient: true } },
+    },
   })
 
   return list
@@ -86,4 +83,3 @@ export async function generateShoppingList(
 export type GeneratedShoppingList = Awaited<
   ReturnType<typeof generateShoppingList>
 >
-

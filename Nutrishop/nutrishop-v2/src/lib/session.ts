@@ -1,7 +1,9 @@
 import { getServerSession } from 'next-auth'
 import { NextAuthOptions, Session } from 'next-auth'
 
-export type SessionGetter = (authOptions: NextAuthOptions) => Promise<Session | null>
+export type SessionGetter = (
+  authOptions: NextAuthOptions,
+) => Promise<Session | null>
 
 let getter: SessionGetter = getServerSession
 

@@ -34,7 +34,7 @@ test('purges expired records', () => {
 test('uses x-real-ip header when present', async () => {
   store.clear()
   const req = new Request('http://test', {
-    headers: { 'x-real-ip': '203.0.113.1' }
+    headers: { 'x-real-ip': '203.0.113.1' },
   })
   const res = await rateLimit(req as any)
   assert.ok(res.ok)
@@ -44,10 +44,10 @@ test('uses x-real-ip header when present', async () => {
 test('trims whitespace in IP headers', async () => {
   store.clear()
   const req1 = new Request('http://test', {
-    headers: { 'x-forwarded-for': ' 203.0.113.1 ' }
+    headers: { 'x-forwarded-for': ' 203.0.113.1 ' },
   })
   const req2 = new Request('http://test', {
-    headers: { 'x-forwarded-for': '203.0.113.1' }
+    headers: { 'x-forwarded-for': '203.0.113.1' },
   })
   await rateLimit(req1 as any)
   await rateLimit(req2 as any)

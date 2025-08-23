@@ -25,7 +25,7 @@ let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
 export const MAX_RESPONSE_LENGTH = 100_000
 
 export function setModel(
-  testModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null
+  testModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null,
 ) {
   model = testModel
 }
@@ -108,7 +108,9 @@ const nutritionSchema = z.object({
 
 export type NutritionAnalysis = z.infer<typeof nutritionSchema>
 
-export async function analyzeNutrition(foodDescription: string): Promise<NutritionAnalysis> {
+export async function analyzeNutrition(
+  foodDescription: string,
+): Promise<NutritionAnalysis> {
   const prompt =
     `Analyse la valeur nutritionnelle de ce plat: "${foodDescription}". ` +
     `Réponds au format JSON avec les champs: kcal, protein (g), carbs (g), fat (g), fiber (g), sugar (g), sodium (mg).`

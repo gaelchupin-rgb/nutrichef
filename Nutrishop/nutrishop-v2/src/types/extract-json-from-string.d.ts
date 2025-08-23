@@ -1,1 +1,1 @@
-declare module 'extract-json-from-string';
+declare module 'extract-json-from-string'

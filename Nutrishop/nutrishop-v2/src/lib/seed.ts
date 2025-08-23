@@ -11,13 +11,13 @@ async function main() {
       email: 'test@example.com',
       username: 'test',
       usernameNormalized: 'test',
-      password
-    }
+      password,
+    },
   })
   await prisma.profile.upsert({
     where: { userId: user.id },
     update: { userId: user.id },
-    create: { userId: user.id }
+    create: { userId: user.id },
   })
 }
 

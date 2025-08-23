@@ -25,7 +25,7 @@ test('generateCombinations returns all combinations', () => {
 test('generateRecommendations omits distance warning with no stores', () => {
   const recs = generateRecommendations(
     { stores: [], items: [], total: 0, savings: 0 },
-    []
+    [],
   )
   assert.ok(!recs.some((r) => r.includes('magasins sont à plus')))
 })
@@ -137,7 +137,7 @@ test('namesMatch requires bidirectional token matches', () => {
 test('classifyShoppingNeeds splits fresh and dry', () => {
   const needs = [
     { id: '1', name: 'Lait', quantity: 1, unit: 'l' },
-    { id: '2', name: 'Pâtes', quantity: 500, unit: 'g' }
+    { id: '2', name: 'Pâtes', quantity: 500, unit: 'g' },
   ]
   const res = classifyShoppingNeeds(needs)
   assert.equal(res.fresh.length, 1)

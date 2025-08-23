@@ -15,7 +15,7 @@ export function getPrisma() {
       throw new Error('DATABASE_URL is invalid')
     }
     globalForPrisma.prisma = new PrismaClient({
-      datasources: { db: { url: DATABASE_URL } }
+      datasources: { db: { url: DATABASE_URL } },
     })
   }
   return globalForPrisma.prisma

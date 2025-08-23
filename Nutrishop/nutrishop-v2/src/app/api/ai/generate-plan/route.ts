@@ -27,18 +27,21 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     const { startDate, endDate } = parsed.data
 
     if (!isValidDateRange(startDate, endDate)) {
-      return NextResponse.json({ error: 'Intervalle de dates invalide' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Intervalle de dates invalide' },
+        { status: 400 },
+      )
     }
 
     const maxRangeDays = 90
     const rangeDays = differenceInCalendarDays(
       parseISO(endDate),
-      parseISO(startDate)
+      parseISO(startDate),
     )
     if (rangeDays > maxRangeDays) {
       return NextResponse.json(
         { error: 'Intervalle de dates trop long (maximum 90 jours)' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
@@ -48,10 +51,10 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
       include: {
         appliances: {
           include: {
-            appliance: true
-          }
-        }
-      }
+            appliance: true,
+          },
+        },
+      },
     })
 
     if (!profile) {
@@ -59,19 +62,28 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     }
 
     const prompt = buildMealPlanPrompt(
-      { cuisineType: profile.cuisineType ?? undefined, appliances: profile.appliances },
+      {
+        cuisineType: profile.cuisineType ?? undefined,
+        appliances: profile.appliances,
+      },
       startDate,
-      endDate
+      endDate,
     )
 
     const mealPlan = await generateMealPlan(prompt)
 
     if (!hasValidMealDates(mealPlan.days)) {
-      return NextResponse.json({ error: 'Date de repas invalide' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Date de repas invalide' },
+        { status: 400 },
+      )
     }
 
     if (!datesWithinRange(mealPlan.days, startDate, endDate)) {
-      return NextResponse.json({ error: 'Date de repas invalide' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Date de repas invalide' },
+        { status: 400 },
+      )
     }
 
     const plan = await saveMealPlan(
@@ -79,13 +91,13 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
       { cuisineType: profile.cuisineType ?? undefined },
       userId,
       startDate,
-      endDate
+      endDate,
     )
 
     return NextResponse.json({
       success: true,
       planId: plan.id,
-      mealPlan
+      mealPlan,
     })
   } catch (error) {
     logger.error({ err: error }, 'Erreur lors de la génération du plan repas')
@@ -94,12 +106,13 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
         'Invalid meal plan format': 'Format du plan repas invalide',
         'Gemini response too large': 'Réponse Gemini trop volumineuse',
       }
-      const message = map[error.message] || 'Échec de la génération du plan repas'
+      const message =
+        map[error.message] || 'Échec de la génération du plan repas'
       return NextResponse.json({ error: message }, { status: 500 })
     }
     return NextResponse.json(
       { error: 'Échec de la génération du plan repas' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 })

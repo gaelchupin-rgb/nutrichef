@@ -6,17 +6,20 @@ import {
   InvalidJsonError,
   PAYLOAD_TOO_LARGE,
   JSON_INVALIDE,
-  TOO_MANY_REQUESTS
+  TOO_MANY_REQUESTS,
 } from './errors'
 
 export function handleJsonRoute<T>(
-  handler: (json: T, req: NextRequest) => Promise<NextResponse>
+  handler: (json: T, req: NextRequest) => Promise<NextResponse>,
 ) {
   return async (req: NextRequest) => {
     const limit = await rateLimit(req)
     const retryAfter = Math.ceil((limit.reset - Date.now()) / 1000)
     if (!limit.ok) {
-      const res = NextResponse.json({ error: TOO_MANY_REQUESTS }, { status: 429 })
+      const res = NextResponse.json(
+        { error: TOO_MANY_REQUESTS },
+        { status: 429 },
+      )
       res.headers.set('X-RateLimit-Remaining', String(limit.remaining))
       res.headers.set('Retry-After', String(retryAfter))
       return res
@@ -24,7 +27,10 @@ export function handleJsonRoute<T>(
     try {
       const parsedReq = await parseJsonBody<T>(req)
       if (!parsedReq.ok) {
-        return NextResponse.json({ error: 'Content-Type invalide' }, { status: 415 })
+        return NextResponse.json(
+          { error: 'Content-Type invalide' },
+          { status: 415 },
+        )
       }
       const res = await handler(parsedReq.data, req)
       res.headers.set('X-RateLimit-Remaining', String(limit.remaining))

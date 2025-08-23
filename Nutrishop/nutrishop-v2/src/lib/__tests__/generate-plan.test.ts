@@ -14,7 +14,15 @@ const mealPlan = {
           name: 'Omelette',
           instructions: [],
           type: 'breakfast',
-          nutrition: { kcal: 1, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 },
+          nutrition: {
+            kcal: 1,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            fiber: 0,
+            sugar: 0,
+            sodium: 0,
+          },
         },
       ],
     },
@@ -25,7 +33,15 @@ const mealPlan = {
           name: 'Omelette',
           instructions: [],
           type: 'breakfast',
-          nutrition: { kcal: 1, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 },
+          nutrition: {
+            kcal: 1,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            fiber: 0,
+            sugar: 0,
+            sodium: 0,
+          },
         },
       ],
     },
@@ -41,7 +57,15 @@ const outOfRangePlan = {
           name: 'Omelette',
           instructions: [],
           type: 'breakfast',
-          nutrition: { kcal: 1, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 },
+          nutrition: {
+            kcal: 1,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            fiber: 0,
+            sugar: 0,
+            sodium: 0,
+          },
         },
       ],
     },
@@ -58,13 +82,21 @@ test('saveMealPlan avoids duplicate recipe errors', async () => {
         upsert: async (args: any) => {
           upsertArgs = args
           return { id: 1 }
-        }
+        },
       },
       menuItem: { create: async () => {} },
     })
   }
-  await utils.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-01', '2024-01-02')
-  assert.deepEqual(upsertArgs.where, { userId_name: { userId: '1', name: 'Omelette' } })
+  await utils.saveMealPlan(
+    mealPlan as any,
+    { cuisineType: 'classique' },
+    '1',
+    '2024-01-01',
+    '2024-01-02',
+  )
+  assert.deepEqual(upsertArgs.where, {
+    userId_name: { userId: '1', name: 'Omelette' },
+  })
   assert.equal(upsertArgs.create.userId, '1')
 })
 
@@ -78,33 +110,48 @@ test('saveMealPlan processes all meals', async () => {
         upsert: async () => {
           calls.push('upsert')
           return { id: 1 }
-        }
+        },
       },
       menuItem: {
         create: async () => {
           calls.push('create')
-        }
-      }
+        },
+      },
     })
   }
-  await utils.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-01', '2024-01-02')
+  await utils.saveMealPlan(
+    mealPlan as any,
+    { cuisineType: 'classique' },
+    '1',
+    '2024-01-01',
+    '2024-01-02',
+  )
   assert.equal(calls.filter((c) => c === 'upsert').length, 2)
   assert.equal(calls.filter((c) => c === 'create').length, 2)
 })
 
 test('datesWithinRange flags out-of-range dates', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
-  assert.equal(utils.datesWithinRange(outOfRangePlan.days, '2024-01-01', '2024-01-02'), false)
+  assert.equal(
+    utils.datesWithinRange(outOfRangePlan.days, '2024-01-01', '2024-01-02'),
+    false,
+  )
 })
 
 test('datesWithinRange rejects invalid dates', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
-  assert.equal(utils.datesWithinRange([{ date: 'invalid' }], '2024-01-01', '2024-01-02'), false)
+  assert.equal(
+    utils.datesWithinRange([{ date: 'invalid' }], '2024-01-01', '2024-01-02'),
+    false,
+  )
 })
 
 test('datesWithinRange rejects inverted intervals', async () => {
   const utils = await import(`../meal-plan?t=${Date.now()}`)
-  assert.equal(utils.datesWithinRange(mealPlan.days, '2024-01-02', '2024-01-01'), false)
+  assert.equal(
+    utils.datesWithinRange(mealPlan.days, '2024-01-02', '2024-01-01'),
+    false,
+  )
 })
 
 test('saveMealPlan throws on out-of-range plan', async () => {
@@ -113,15 +160,25 @@ test('saveMealPlan throws on out-of-range plan', async () => {
   ;(prisma as any).$transaction = async () => {}
   await assert.rejects(
     () =>
-      utils.saveMealPlan(mealPlan as any, { cuisineType: 'classique' }, '1', '2024-01-02', '2024-01-01'),
-    /Meal plan dates out of range/
+      utils.saveMealPlan(
+        mealPlan as any,
+        { cuisineType: 'classique' },
+        '1',
+        '2024-01-02',
+        '2024-01-01',
+      ),
+    /Meal plan dates out of range/,
   )
 })
 
 test('returns 400 on invalid JSON', async () => {
   const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
-  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  session.setSessionGetter(async () => ({
+    user: { id: '1', email: 'a@a.com', name: 'user' },
+  }))
+  const route = await import(
+    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
+  )
   const req = new Request('http://test', {
     method: 'POST',
     body: '{not json',
@@ -133,8 +190,12 @@ test('returns 400 on invalid JSON', async () => {
 
 test('returns 415 on invalid Content-Type', async () => {
   const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
-  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  session.setSessionGetter(async () => ({
+    user: { id: '1', email: 'a@a.com', name: 'user' },
+  }))
+  const route = await import(
+    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
+  )
   const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-01-02' }),
@@ -146,8 +207,12 @@ test('returns 415 on invalid Content-Type', async () => {
 
 test('returns 413 on payload too large', async () => {
   const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
-  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  session.setSessionGetter(async () => ({
+    user: { id: '1', email: 'a@a.com', name: 'user' },
+  }))
+  const route = await import(
+    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
+  )
   const large = 'a'.repeat(DEFAULT_MAX_JSON_SIZE + 1)
   const req = new Request('http://test', {
     method: 'POST',
@@ -155,8 +220,8 @@ test('returns 413 on payload too large', async () => {
     headers: {
       'content-type': 'application/json',
       'content-length': '10',
-      'x-real-ip': '203.0.113.10'
-    }
+      'x-real-ip': '203.0.113.10',
+    },
   })
   const res = await route.POST(req as any)
   assert.equal(res.status, 413)
@@ -165,7 +230,9 @@ test('returns 413 on payload too large', async () => {
 test('allows ranges up to 90 days', async () => {
   const session = await import(`../session?t=${Date.now()}`)
   const gemini = await import(`../gemini?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
+  session.setSessionGetter(async () => ({
+    user: { id: '1', email: 'a@a.com', name: 'user' },
+  }))
   ;(prisma as any).profile = {
     findUnique: async () => ({ cuisineType: null, appliances: [] }),
   }
@@ -181,7 +248,9 @@ test('allows ranges up to 90 days', async () => {
       response: { text: () => JSON.stringify(mealPlan) },
     }),
   })
-  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  const route = await import(
+    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
+  )
   const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-03-31' }),
@@ -193,8 +262,12 @@ test('allows ranges up to 90 days', async () => {
 
 test('rejects ranges longer than 90 days', async () => {
   const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({ user: { id: '1', email: 'a@a.com', name: 'user' } }))
-  const route = await import(`../../app/api/ai/generate-plan/route?t=${Date.now()}`)
+  session.setSessionGetter(async () => ({
+    user: { id: '1', email: 'a@a.com', name: 'user' },
+  }))
+  const route = await import(
+    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
+  )
   const req = new Request('http://test', {
     method: 'POST',
     body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-04-01' }),
