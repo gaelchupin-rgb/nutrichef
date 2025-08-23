@@ -33,8 +33,8 @@ export function setModel(
 function getModel() {
   if (!model) {
     const { GOOGLE_API_KEY, GEMINI_MODEL } = getEnv()
-    if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY is required')
-    if (!GEMINI_MODEL) throw new Error('GEMINI_MODEL is required')
+    if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY est requis')
+    if (!GEMINI_MODEL) throw new Error('GEMINI_MODEL est requis')
     const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY)
     model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
   }
@@ -66,7 +66,7 @@ export function parseMealPlanResponse(text: string) {
     } catch {}
   }
 
-  throw new Error('Invalid meal plan format')
+  throw new Error('Format du plan repas invalide')
 }
 
 export async function generateMealPlan(prompt: string): Promise<MealPlan> {
@@ -75,24 +75,26 @@ export async function generateMealPlan(prompt: string): Promise<MealPlan> {
     const response = await result.response
     const text = response.text()
     if (text.length > MAX_RESPONSE_LENGTH) {
-      throw new Error('Gemini response too large')
+      throw new Error('Réponse Gemini trop volumineuse')
     }
     const data = parseMealPlanResponse(text)
     const parsed = mealPlanSchema.safeParse(data)
     if (!parsed.success) {
-      throw new Error('Invalid meal plan format')
+      throw new Error('Format du plan repas invalide')
     }
     return parsed.data
   } catch (error) {
-    logger.error({ err: error }, 'Error generating meal plan')
+    logger.error({ err: error }, 'Erreur lors de la génération du plan repas')
     if (
       error instanceof Error &&
-      (error.message === 'Invalid meal plan format' ||
-        error.message === 'Gemini response too large')
+      (error.message === 'Format du plan repas invalide' ||
+        error.message === 'Réponse Gemini trop volumineuse')
     ) {
       throw new GenerationError(error.message, { cause: error })
     }
-    throw new GenerationError('Failed to generate meal plan', { cause: error })
+    throw new GenerationError('Échec de la génération du plan repas', {
+      cause: error,
+    })
   }
 }
 
@@ -120,29 +122,31 @@ export async function analyzeNutrition(
     const response = await result.response
     const text = response.text()
     if (text.length > MAX_RESPONSE_LENGTH) {
-      throw new Error('Gemini response too large')
+      throw new Error('Réponse Gemini trop volumineuse')
     }
 
     let data: unknown
     try {
       data = parseMealPlanResponse(text)
     } catch {
-      throw new Error('Invalid nutrition analysis format')
+      throw new Error("Format d'analyse nutritionnelle invalide")
     }
     const parsed = nutritionSchema.safeParse(data)
     if (!parsed.success) {
-      throw new Error('Invalid nutrition analysis format')
+      throw new Error("Format d'analyse nutritionnelle invalide")
     }
     return parsed.data
   } catch (error) {
-    logger.error({ err: error }, 'Error analyzing nutrition')
+    logger.error({ err: error }, "Erreur lors de l'analyse nutritionnelle")
     if (
       error instanceof Error &&
-      (error.message === 'Invalid nutrition analysis format' ||
-        error.message === 'Gemini response too large')
+      (error.message === "Format d'analyse nutritionnelle invalide" ||
+        error.message === 'Réponse Gemini trop volumineuse')
     ) {
       throw new NutritionError(error.message, { cause: error })
     }
-    throw new NutritionError('Failed to analyze nutrition', { cause: error })
+    throw new NutritionError("Échec de l'analyse nutritionnelle", {
+      cause: error,
+    })
   }
 }
