@@ -11,7 +11,7 @@ import { parseMealPlanResponse, MAX_RESPONSE_LENGTH } from './utils'
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? 'gpt-4o-mini'
 
-let client: OpenAI | null = null
+let client: any | null = null
 
 function getClient() {
   if (!client) {
