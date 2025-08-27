@@ -2,9 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { z } from 'zod'
 import extract from 'extract-json-from-string'
 import { jsonrepair } from 'jsonrepair'
-import { getEnv } from './config'
 import { mealPlanSchema, type MealPlan } from './meal-plan'
-import { logger } from './logger'
 
 export class GenerationError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -20,30 +18,23 @@ export class NutritionError extends Error {
   }
 }
 
+const GEMINI_MODEL = 'gemini-1.5-flash'
+
 let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
 
 export const MAX_RESPONSE_LENGTH = 100_000
 
-export function setModel(
-  testModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null,
-) {
-  model = testModel
-}
-
 function getModel() {
   if (!model) {
-    const { GOOGLE_API_KEY, GEMINI_MODEL } = getEnv()
-    if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY est requis')
-    if (!GEMINI_MODEL) throw new Error('GEMINI_MODEL est requis')
-    const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY)
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) throw new Error('GEMINI_API_KEY est requis')
+    const genAI = new GoogleGenerativeAI(apiKey)
     model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
   }
   return model
 }
 
-export { getModel }
-
-export function parseMealPlanResponse(text: string) {
+function parseResponse(text: string) {
   const cleaned = text.replace(/```(?:json)?|```/gi, '').trim()
 
   const extracted = extract(cleaned)
@@ -69,22 +60,26 @@ export function parseMealPlanResponse(text: string) {
   throw new Error('Format du plan repas invalide')
 }
 
-export async function generateMealPlan(prompt: string): Promise<MealPlan> {
+export async function generateMealPlan(
+  prompt: string,
+  customModel?: ReturnType<GoogleGenerativeAI['getGenerativeModel']>,
+): Promise<MealPlan> {
+  const m = customModel ?? getModel()
   try {
-    const result = await getModel().generateContent(prompt)
+    const result = await m.generateContent(prompt)
     const response = await result.response
     const text = response.text()
     if (text.length > MAX_RESPONSE_LENGTH) {
       throw new Error('Réponse Gemini trop volumineuse')
     }
-    const data = parseMealPlanResponse(text)
+    const data = parseResponse(text)
     const parsed = mealPlanSchema.safeParse(data)
     if (!parsed.success) {
       throw new Error('Format du plan repas invalide')
     }
     return parsed.data
   } catch (error) {
-    logger.error({ err: error }, 'Erreur lors de la génération du plan repas')
+    console.error(error)
     if (
       error instanceof Error &&
       (error.message === 'Format du plan repas invalide' ||
@@ -112,13 +107,15 @@ export type NutritionAnalysis = z.infer<typeof nutritionSchema>
 
 export async function analyzeNutrition(
   foodDescription: string,
+  customModel?: ReturnType<GoogleGenerativeAI['getGenerativeModel']>,
 ): Promise<NutritionAnalysis> {
   const prompt =
     `Analyse la valeur nutritionnelle de ce plat: "${foodDescription}". ` +
     `Réponds au format JSON avec les champs: kcal, protein (g), carbs (g), fat (g), fiber (g), sugar (g), sodium (mg).`
 
   try {
-    const result = await getModel().generateContent(prompt)
+    const m = customModel ?? getModel()
+    const result = await m.generateContent(prompt)
     const response = await result.response
     const text = response.text()
     if (text.length > MAX_RESPONSE_LENGTH) {
@@ -127,7 +124,7 @@ export async function analyzeNutrition(
 
     let data: unknown
     try {
-      data = parseMealPlanResponse(text)
+      data = parseResponse(text)
     } catch {
       throw new Error("Format d'analyse nutritionnelle invalide")
     }
@@ -137,7 +134,7 @@ export async function analyzeNutrition(
     }
     return parsed.data
   } catch (error) {
-    logger.error({ err: error }, "Erreur lors de l'analyse nutritionnelle")
+    console.error(error)
     if (
       error instanceof Error &&
       (error.message === "Format d'analyse nutritionnelle invalide" ||

@@ -7,7 +7,6 @@ import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
 import { handleJsonRoute } from '@/lib/api-handler'
 import { requestSchema } from '@/lib/types'
-import { logger } from '@/lib/logger'
 
 export const POST = handleJsonRoute(async (json, req: NextRequest) => {
   try {
@@ -89,7 +88,7 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
       mealPlan,
     })
   } catch (error) {
-    logger.error({ err: error }, 'Erreur lors de la génération du plan repas')
+    console.error('Erreur lors de la génération du plan repas', error)
     if (error instanceof GenerationError) {
       const message = error.message || 'Échec de la génération du plan repas'
       return NextResponse.json({ error: message }, { status: 500 })
