@@ -3,7 +3,6 @@ import { z } from 'zod'
 import extract from 'extract-json-from-string'
 import { jsonrepair } from 'jsonrepair'
 import { mealPlanSchema, type MealPlan } from './meal-plan'
-import { logger } from './logger'
 
 export class GenerationError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -83,7 +82,7 @@ export async function generateMealPlan(prompt: string): Promise<MealPlan> {
     }
     return parsed.data
   } catch (error) {
-    logger.error({ err: error }, 'Erreur lors de la génération du plan repas')
+    console.error({ err: error }, 'Erreur lors de la génération du plan repas')
     if (
       error instanceof Error &&
       (error.message === 'Format du plan repas invalide' ||
@@ -136,7 +135,7 @@ export async function analyzeNutrition(
     }
     return parsed.data
   } catch (error) {
-    logger.error({ err: error }, "Erreur lors de l'analyse nutritionnelle")
+    console.error({ err: error }, "Erreur lors de l'analyse nutritionnelle")
     if (
       error instanceof Error &&
       (error.message === "Format d'analyse nutritionnelle invalide" ||
