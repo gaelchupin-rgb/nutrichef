@@ -1,24 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authOptions } from '@/lib/auth'
-import { getPrisma } from '@/lib/db'
 import { generateMealPlan, GenerationError } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
-import { getSession } from '@/lib/session'
 import { handleJsonRoute } from '@/lib/api-handler'
 import { requestSchema } from '@/lib/types'
 import { logger } from '@/lib/logger'
 
 export const POST = handleJsonRoute(async (json, req: NextRequest) => {
   try {
-    const session = await getSession(authOptions)
-    const userId = session?.user.id
-
-    if (!session || !userId) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
 
     const parsed = requestSchema.safeParse(json)
     if (!parsed.success) {
@@ -45,21 +36,7 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
       )
     }
 
-    const prisma = getPrisma()
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
-      include: {
-        appliances: {
-          include: {
-            appliance: true,
-          },
-        },
-      },
-    })
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 })
-    }
+    const profile = { cuisineType: undefined, appliances: [] as any[] }
 
     const prompt = buildMealPlanPrompt(
       {
@@ -89,7 +66,6 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     const plan = await saveMealPlan(
       mealPlan,
       { cuisineType: profile.cuisineType ?? undefined },
-      userId,
       startDate,
       endDate,
     )

@@ -8,11 +8,11 @@ export interface ShoppingListItemInput {
   category?: string | null
 }
 
-export async function generateShoppingList(planId: string, userId: string) {
+export async function generateShoppingList(planId: string) {
   const prisma = getPrisma()
 
   const plan = await prisma.plan.findFirst({
-    where: { id: planId, userId },
+    where: { id: planId },
     include: {
       menuItems: {
         include: {

@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { authOptions } from '@/lib/auth'
-import { getSession } from '@/lib/session'
 import { handleJsonRoute } from '@/lib/api-handler'
 import { generateShoppingList } from '@/lib/shopping-list'
 
@@ -10,12 +8,6 @@ const requestSchema = z.object({
 })
 
 export const POST = handleJsonRoute(async (json) => {
-  const session = await getSession(authOptions)
-  const userId = session?.user.id
-
-  if (!session || !userId) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-  }
 
   const parsed = requestSchema.safeParse(json)
   if (!parsed.success) {
@@ -23,7 +15,7 @@ export const POST = handleJsonRoute(async (json) => {
   }
 
   try {
-    const list = await generateShoppingList(parsed.data.planId, userId)
+    const list = await generateShoppingList(parsed.data.planId)
     const items = list.items.map((i) => ({
       id: i.ingredientId,
       name: i.ingredient.name,
