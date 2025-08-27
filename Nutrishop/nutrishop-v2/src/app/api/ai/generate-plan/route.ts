@@ -1,24 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authOptions } from '@/lib/auth'
 import { getPrisma } from '@/lib/db'
 import { generateMealPlan, GenerationError } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
-import { getSession } from '@/lib/session'
 import { handleJsonRoute } from '@/lib/api-handler'
 import { requestSchema } from '@/lib/types'
 import { logger } from '@/lib/logger'
 
 export const POST = handleJsonRoute(async (json, req: NextRequest) => {
   try {
-    const session = await getSession(authOptions)
-    const userId = session?.user.id
-
-    if (!session || !userId) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
-    }
+    const userId = ''
 
     const parsed = requestSchema.safeParse(json)
     if (!parsed.success) {

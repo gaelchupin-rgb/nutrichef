@@ -65,41 +65,41 @@ test('filterOutliers keeps free offers', () => {
 })
 
 test('normalizeToBaseUnit converts various units', () => {
-  const lb = normalizeToBaseUnit(1, 'lb')!
+  const lb = normalizeToBaseUnit(1, 'lb') as any
   assert.equal(lb.baseUnit, 'g')
   assert.ok(Math.abs(lb.value - 453.592) < 0.001)
 
-  const oz = normalizeToBaseUnit(1, 'OZ')!
+  const oz = normalizeToBaseUnit(1, 'OZ') as any
   assert.equal(oz.baseUnit, 'g')
   assert.ok(Math.abs(oz.value - 28.3495) < 0.001)
 
-  const litre = normalizeToBaseUnit(2, 'Litres')!
+  const litre = normalizeToBaseUnit(2, 'Litres') as any
   assert.equal(litre.baseUnit, 'ml')
   assert.equal(litre.value, 2000)
 
-  const kilo = normalizeToBaseUnit(1, 'kilogrammes')!
+  const kilo = normalizeToBaseUnit(1, 'kilogrammes') as any
   assert.equal(kilo.baseUnit, 'g')
   assert.equal(kilo.value, 1000)
 
-  const ml = normalizeToBaseUnit(500, 'milliliters')!
+  const ml = normalizeToBaseUnit(500, 'milliliters') as any
   assert.equal(ml.baseUnit, 'ml')
   assert.equal(ml.value, 500)
 
-  const mg = normalizeToBaseUnit(5000, 'mg')!
+  const mg = normalizeToBaseUnit(5000, 'mg') as any
   assert.equal(mg.baseUnit, 'g')
   assert.equal(mg.value, 5)
 
-  const cl = normalizeToBaseUnit(2, 'centilitre')!
+  const cl = normalizeToBaseUnit(2, 'centilitre') as any
   assert.equal(cl.baseUnit, 'ml')
   assert.equal(cl.value, 20)
 
-  const pcs = normalizeToBaseUnit(3, 'pcs')!
+  const pcs = normalizeToBaseUnit(3, 'pcs') as any
   assert.equal(pcs.baseUnit, 'unit')
   assert.equal(pcs.value, 3)
 })
 
 test('normalizeToBaseUnit trims whitespace', () => {
-  const kg = normalizeToBaseUnit(1, ' kg ')!
+  const kg = normalizeToBaseUnit(1, ' kg ') as any
   assert.equal(kg.baseUnit, 'g')
   assert.equal(kg.value, 1000)
 })
@@ -135,7 +135,7 @@ test('namesMatch requires bidirectional token matches', () => {
 })
 
 test('classifyShoppingNeeds splits fresh and dry', () => {
-  const needs = [
+  const needs: any[] = [
     { id: '1', name: 'Lait', quantity: 1, unit: 'l' },
     { id: '2', name: 'Pâtes', quantity: 500, unit: 'g' },
   ]

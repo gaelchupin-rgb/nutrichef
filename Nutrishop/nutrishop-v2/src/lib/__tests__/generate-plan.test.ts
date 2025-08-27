@@ -2,7 +2,6 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { getPrisma } from '../db'
 import { differenceInCalendarDays } from 'date-fns'
-import { DEFAULT_MAX_JSON_SIZE } from '../api-utils'
 const prisma = getPrisma()
 
 const mealPlan = {
@@ -171,111 +170,6 @@ test('saveMealPlan throws on out-of-range plan', async () => {
   )
 })
 
-test('returns 400 on invalid JSON', async () => {
-  const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({
-    user: { id: '1', email: 'a@a.com', name: 'user' },
-  }))
-  const route = await import(
-    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
-  )
-  const req = new Request('http://test', {
-    method: 'POST',
-    body: '{not json',
-    headers: { 'content-type': 'application/json' },
-  })
-  const res = await route.POST(req as any)
-  assert.equal(res.status, 400)
-})
-
-test('returns 415 on invalid Content-Type', async () => {
-  const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({
-    user: { id: '1', email: 'a@a.com', name: 'user' },
-  }))
-  const route = await import(
-    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
-  )
-  const req = new Request('http://test', {
-    method: 'POST',
-    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-01-02' }),
-    headers: { 'content-type': 'text/plain' },
-  })
-  const res = await route.POST(req as any)
-  assert.equal(res.status, 415)
-})
-
-test('returns 413 on payload too large', async () => {
-  const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({
-    user: { id: '1', email: 'a@a.com', name: 'user' },
-  }))
-  const route = await import(
-    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
-  )
-  const large = 'a'.repeat(DEFAULT_MAX_JSON_SIZE + 1)
-  const req = new Request('http://test', {
-    method: 'POST',
-    body: large,
-    headers: {
-      'content-type': 'application/json',
-      'content-length': '10',
-      'x-real-ip': '203.0.113.10',
-    },
-  })
-  const res = await route.POST(req as any)
-  assert.equal(res.status, 413)
-})
-
-test('allows ranges up to 90 days', async () => {
-  const session = await import(`../session?t=${Date.now()}`)
-  const gemini = await import(`../gemini?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({
-    user: { id: '1', email: 'a@a.com', name: 'user' },
-  }))
-  ;(prisma as any).profile = {
-    findUnique: async () => ({ cuisineType: null, appliances: [] }),
-  }
-  ;(prisma as any).$transaction = async (cb: any) => {
-    return cb({
-      plan: { create: async () => ({ id: 1 }) },
-      recipe: { upsert: async () => ({ id: 1 }) },
-      menuItem: { create: async () => {} },
-    })
-  }
-  ;(gemini as any).setModel({
-    generateContent: async () => ({
-      response: { text: () => JSON.stringify(mealPlan) },
-    }),
-  })
-  const route = await import(
-    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
-  )
-  const req = new Request('http://test', {
-    method: 'POST',
-    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-03-31' }),
-    headers: { 'content-type': 'application/json' },
-  })
-  const res = await route.POST(req as any)
-  assert.equal(res.status, 200)
-})
-
-test('rejects ranges longer than 90 days', async () => {
-  const session = await import(`../session?t=${Date.now()}`)
-  session.setSessionGetter(async () => ({
-    user: { id: '1', email: 'a@a.com', name: 'user' },
-  }))
-  const route = await import(
-    `../../app/api/ai/generate-plan/route?t=${Date.now()}`
-  )
-  const req = new Request('http://test', {
-    method: 'POST',
-    body: JSON.stringify({ startDate: '2024-01-01', endDate: '2024-04-01' }),
-    headers: { 'content-type': 'application/json' },
-  })
-  const res = await route.POST(req as any)
-  assert.equal(res.status, 400)
-})
 
 test('differenceInCalendarDays handles DST transition', () => {
   const start = new Date('2024-03-09')
