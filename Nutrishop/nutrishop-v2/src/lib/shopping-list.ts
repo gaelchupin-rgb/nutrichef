@@ -1,13 +1,5 @@
 import { getPrisma } from '@/lib/db'
 
-export interface ShoppingListItemInput {
-  ingredientId: string
-  name: string
-  quantity: number
-  unit: string | null
-  category?: string | null
-}
-
 export async function generateShoppingList(planId: string) {
   const prisma = getPrisma()
 
@@ -18,9 +10,7 @@ export async function generateShoppingList(planId: string) {
         include: {
           recipe: {
             include: {
-              ingredients: {
-                include: { ingredient: true },
-              },
+              ingredients: true,
             },
           },
         },
@@ -30,7 +20,10 @@ export async function generateShoppingList(planId: string) {
 
   if (!plan) throw new Error('Plan not found')
 
-  const aggregated = new Map<string, ShoppingListItemInput>()
+  const aggregated = new Map<
+    string,
+    { ingredientId: string; quantity: number; unit: string | null }
+  >()
 
   for (const item of plan.menuItems) {
     for (const ri of item.recipe.ingredients) {
@@ -41,10 +34,8 @@ export async function generateShoppingList(planId: string) {
       } else {
         aggregated.set(key, {
           ingredientId: ri.ingredientId,
-          name: ri.ingredient.name,
           quantity: ri.quantity,
           unit: ri.unit,
-          category: ri.ingredient.category,
         })
       }
     }
