@@ -8,15 +8,13 @@ const requestSchema = z.object({
 })
 
 export const POST = handleJsonRoute(async (json) => {
-  const userId = ''
-
   const parsed = requestSchema.safeParse(json)
   if (!parsed.success) {
     return NextResponse.json({ error: 'Entrée invalide' }, { status: 400 })
   }
 
   try {
-    const list = await generateShoppingList(parsed.data.planId, userId)
+    const list = await generateShoppingList(parsed.data.planId)
     const items = list.items.map((i) => ({
       id: i.ingredientId,
       name: i.ingredient.name,

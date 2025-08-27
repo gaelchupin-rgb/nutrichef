@@ -16,7 +16,6 @@ Ce projet contient une application Next.js située dans `Nutrishop/nutrishop-v2`
    - `DATABASE_URL`
    - `GOOGLE_API_KEY`
    - `GEMINI_MODEL`
-   - `REDIS_URL` (facultatif, pour la limitation de débit)
 4. Générer le client Prisma:
    ```bash
    npm run db:generate
@@ -81,9 +80,3 @@ Le script de test définit automatiquement des valeurs fictives pour `DATABASE_U
 
 > **Prérequis** : Node.js 20 ou supérieur est recommandé pour l'exécution des tests.
 
-## API et limitation de débit
-
-Les routes API renvoient des en-têtes de limitation de débit :
-
-- `X-RateLimit-Remaining` : nombre de requêtes restantes dans la fenêtre courante.
-- `Retry-After` : secondes à attendre avant de réessayer après un `429`.

@@ -11,8 +11,6 @@ import { logger } from '@/lib/logger'
 
 export const POST = handleJsonRoute(async (json, req: NextRequest) => {
   try {
-    const userId = ''
-
     const parsed = requestSchema.safeParse(json)
     if (!parsed.success) {
       return NextResponse.json({ error: 'Entrée invalide' }, { status: 400 })
@@ -39,8 +37,7 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     }
 
     const prisma = getPrisma()
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
+    const profile = await prisma.profile.findFirst({
       include: {
         appliances: {
           include: {
@@ -82,7 +79,6 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     const plan = await saveMealPlan(
       mealPlan,
       { cuisineType: profile.cuisineType ?? undefined },
-      userId,
       startDate,
       endDate,
     )
