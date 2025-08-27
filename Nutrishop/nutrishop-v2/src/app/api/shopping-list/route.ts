@@ -17,10 +17,10 @@ export const POST = handleJsonRoute(async (json) => {
     const list = await generateShoppingList(parsed.data.planId)
     const items = list.items.map((i) => ({
       id: i.ingredientId,
-      name: i.ingredient.name,
+      name: i.name,
       quantity: i.quantity,
       unit: i.unit,
-      category: i.ingredient.category,
+      category: i.category ?? null,
     }))
     return NextResponse.json({ items })
   } catch (err) {

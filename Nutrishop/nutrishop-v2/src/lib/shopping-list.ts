@@ -1,4 +1,5 @@
-import { getPrisma } from '@/lib/db'
+import { getMealPlan } from '@/lib/meal-plan'
+import { randomUUID } from 'crypto'
 
 export interface ShoppingListItemInput {
   ingredientId: string
@@ -8,75 +9,48 @@ export interface ShoppingListItemInput {
   category?: string | null
 }
 
+interface ShoppingList {
+  id: string
+  planId: string
+  items: ShoppingListItemInput[]
+}
+
+const shoppingLists: ShoppingList[] = []
+
+export function getShoppingList(planId: string) {
+  return shoppingLists.find((l) => l.planId === planId)
+}
+
 export async function generateShoppingList(planId: string) {
-  const prisma = getPrisma()
-
-  const plan = await prisma.plan.findUnique({
-    where: { id: planId },
-    include: {
-      menuItems: {
-        include: {
-          recipe: {
-            include: {
-              ingredients: {
-                include: { ingredient: true },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-
+  const plan = getMealPlan(planId)
   if (!plan) throw new Error('Plan not found')
 
   const aggregated = new Map<string, ShoppingListItemInput>()
 
-  for (const item of plan.menuItems) {
-    for (const ri of item.recipe.ingredients) {
-      const key = `${ri.ingredientId}:${ri.unit || ''}`
-      const existing = aggregated.get(key)
-      if (existing) {
-        existing.quantity += ri.quantity
-      } else {
-        aggregated.set(key, {
-          ingredientId: ri.ingredientId,
-          name: ri.ingredient.name,
-          quantity: ri.quantity,
-          unit: ri.unit,
-          category: ri.ingredient.category,
-        })
+  for (const day of plan.days) {
+    for (const meal of day.meals) {
+      const ingredients = (meal as any).ingredients as
+        | ShoppingListItemInput[]
+        | undefined
+      if (!ingredients) continue
+      for (const ri of ingredients) {
+        const key = `${ri.ingredientId}:${ri.unit || ''}`
+        const existing = aggregated.get(key)
+        if (existing) {
+          existing.quantity += ri.quantity
+        } else {
+          aggregated.set(key, { ...ri })
+        }
       }
     }
   }
 
-  const list = await prisma.shoppingList.upsert({
-    where: { planId },
-    update: {
-      items: {
-        deleteMany: {},
-        create: Array.from(aggregated.values()).map((i) => ({
-          ingredientId: i.ingredientId,
-          quantity: i.quantity,
-          unit: i.unit,
-        })),
-      },
-    },
-    create: {
-      planId,
-      items: {
-        create: Array.from(aggregated.values()).map((i) => ({
-          ingredientId: i.ingredientId,
-          quantity: i.quantity,
-          unit: i.unit,
-        })),
-      },
-    },
-    include: {
-      items: { include: { ingredient: true } },
-    },
-  })
-
+  const list: ShoppingList = {
+    id: randomUUID(),
+    planId,
+    items: Array.from(aggregated.values()),
+  }
+  shoppingLists.push(list)
   return list
 }
 

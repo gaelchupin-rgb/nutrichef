@@ -1,4 +1,4 @@
-import { getPrisma } from '@/lib/db'
+import { randomUUID } from 'crypto'
 import { z } from 'zod'
 import { isValidDate } from '@/lib/date-utils'
 import { parseISO } from 'date-fns'
@@ -39,6 +39,20 @@ export const mealPlanSchema = z.object({
 })
 
 export type MealPlan = z.infer<typeof mealPlanSchema>
+
+export interface StoredMealPlan {
+  id: string
+  startDate: string
+  endDate: string
+  days: MealPlan['days']
+  profile: MealPlanProfile
+}
+
+const mealPlans: StoredMealPlan[] = []
+
+export function getMealPlan(id: string) {
+  return mealPlans.find((p) => p.id === id)
+}
 
 export function datesWithinRange(
   days: Array<{ date: string }>,
@@ -88,52 +102,13 @@ export async function saveMealPlan(
   if (!datesWithinRange(validMealPlan.days, startDate, endDate)) {
     throw new Error('Meal plan dates out of range')
   }
-  const prisma = getPrisma()
-  return prisma.$transaction(async (tx) => {
-    const plan = await tx.plan.create({
-      data: {
-        startDate: parseISO(startDate),
-        endDate: parseISO(endDate),
-      },
-    })
-
-    for (const day of validMealPlan.days) {
-      for (const meal of day.meals) {
-        const recipeData = {
-          description: meal.description,
-          instructions: meal.instructions.join('\n'),
-          prepTime: meal.prepTime,
-          cookTime: meal.cookTime,
-          servings: meal.servings,
-          difficulty: meal.difficulty,
-          kcal: meal.nutrition.kcal,
-          protein: meal.nutrition.protein,
-          carbs: meal.nutrition.carbs,
-          fat: meal.nutrition.fat,
-          fiber: meal.nutrition.fiber,
-          sugar: meal.nutrition.sugar,
-          sodium: meal.nutrition.sodium,
-          tags: [profile.cuisineType || 'classique'],
-          category: meal.type,
-        }
-
-        const recipe = await tx.recipe.upsert({
-          where: { name: meal.name },
-          update: recipeData,
-          create: { name: meal.name, ...recipeData },
-        })
-
-        await tx.menuItem.create({
-          data: {
-            planId: plan.id,
-            date: parseISO(day.date),
-            mealType: meal.type,
-            recipeId: recipe.id,
-          },
-        })
-      }
-    }
-
-    return plan
-  })
+  const plan: StoredMealPlan = {
+    id: randomUUID(),
+    startDate,
+    endDate,
+    days: validMealPlan.days,
+    profile,
+  }
+  mealPlans.push(plan)
+  return plan
 }

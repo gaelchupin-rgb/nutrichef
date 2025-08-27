@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPrisma } from '@/lib/db'
 import { generateMealPlan, GenerationError } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
@@ -36,26 +35,10 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
       )
     }
 
-    const prisma = getPrisma()
-    const profile = await prisma.profile.findFirst({
-      include: {
-        appliances: {
-          include: {
-            appliance: true,
-          },
-        },
-      },
-    })
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 })
-    }
+    const profile = { cuisineType: undefined, appliances: [] as any[] }
 
     const prompt = buildMealPlanPrompt(
-      {
-        cuisineType: profile.cuisineType ?? undefined,
-        appliances: profile.appliances,
-      },
+      { cuisineType: profile.cuisineType ?? undefined, appliances: profile.appliances },
       startDate,
       endDate,
     )
