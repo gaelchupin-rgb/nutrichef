@@ -7,24 +7,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Profile {
-  id           String               @id @default(cuid())
-  cuisineType  String?
-  appliances   ProfileAppliance[]
-}
-
 model Appliance {
-  id       String             @id @default(cuid())
-  name     String             @unique
-  profiles ProfileAppliance[]
-}
-
-model ProfileAppliance {
-  id          String    @id @default(cuid())
-  profile     Profile   @relation(fields: [profileId], references: [id])
-  profileId   String
-  appliance   Appliance @relation(fields: [applianceId], references: [id])
-  applianceId String
+  id   String @id @default(cuid())
+  name String @unique
 }
 
 model Recipe {

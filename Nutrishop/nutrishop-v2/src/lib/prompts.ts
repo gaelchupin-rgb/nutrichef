@@ -1,6 +1,11 @@
 interface Profile {
-  cuisineType?: string
-  appliances?: { appliance: { name: string } }[]
+  cuisine?: string
+  appliances?: string[]
+}
+
+export const profile: Profile = {
+  cuisine: 'classique',
+  appliances: [],
 }
 
 import { mealPlanSchema, mealTypes } from './meal-plan'
@@ -10,8 +15,7 @@ export function buildMealPlanPrompt(
   startDate: string,
   endDate: string,
 ) {
-  const applianceList =
-    profile.appliances?.map((a) => a.appliance.name).join(', ') || 'none'
+  const applianceList = profile.appliances?.join(', ') || 'none'
 
   const exampleObj = mealPlanSchema.parse({
     days: [
@@ -45,7 +49,7 @@ export function buildMealPlanPrompt(
   const example = JSON.stringify(exampleObj, null, 2)
 
   return `Tu es un planificateur de repas. Crée un plan de repas du ${startDate} au ${endDate}.
-Cuisine préférée: ${profile.cuisineType || 'classique'}.
+Cuisine préférée: ${profile.cuisine || 'classique'}.
 Appareils disponibles: ${applianceList}.
 Réponds en JSON avec le format ${example}`
 }
