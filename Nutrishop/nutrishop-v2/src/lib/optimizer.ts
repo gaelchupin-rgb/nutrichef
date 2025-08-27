@@ -1,5 +1,3 @@
-import { getEnv } from './config'
-
 export class UnknownUnitError extends Error {
   constructor(unit: string) {
     super(`Unknown unit: ${unit}`)
@@ -55,7 +53,7 @@ export interface OptimizationResult {
   recommendations: string[]
 }
 
-export const MAX_STORE_COMBINATIONS = getEnv().MAX_STORE_COMBINATIONS
+export const MAX_STORE_COMBINATIONS = 5000
 
 // Convertir les unités en unités de base pour la comparaison
 const weightUnits: Record<string, number> = {

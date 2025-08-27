@@ -12,7 +12,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx src/lib/seed.ts",
     "type-check": "tsc --noEmit",
-    "test": "DATABASE_URL=postgresql://user:pass@localhost:5432/test GOOGLE_API_KEY=dummy GEMINI_MODEL=test-model node --test -r tsx src/lib/__tests__/*.test.ts",
+    "test": "DATABASE_URL=postgresql://user:pass@localhost:5432/test GEMINI_API_KEY=dummy node --test -r tsx src/lib/__tests__/*.test.ts",
     "format": "prettier --write ."
   },
   "dependencies": {
