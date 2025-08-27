@@ -1,16 +1,15 @@
-import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { handleJsonRoute } from '@/lib/api-handler'
 import { generateShoppingList } from '@/lib/shopping-list'
 
 const requestSchema = z.object({
   planId: z.string(),
 })
 
-export const POST = handleJsonRoute(async (json) => {
+export async function POST(req: Request) {
+  const json = await req.json()
   const parsed = requestSchema.safeParse(json)
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Entrée invalide' }, { status: 400 })
+    return Response.json({ error: 'Entrée invalide' }, { status: 400 })
   }
 
   try {
@@ -22,11 +21,11 @@ export const POST = handleJsonRoute(async (json) => {
       unit: i.unit,
       category: i.ingredient.category,
     }))
-    return NextResponse.json({ items })
+    return Response.json({ items })
   } catch (err) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'Échec de la génération' },
       { status: 500 },
     )
   }
-})
+}

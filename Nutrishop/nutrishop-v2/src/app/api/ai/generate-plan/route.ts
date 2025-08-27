@@ -1,24 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/db'
 import { generateMealPlan, GenerationError } from '@/lib/gemini'
 import { buildMealPlanPrompt } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { datesWithinRange, saveMealPlan } from '@/lib/meal-plan'
-import { handleJsonRoute } from '@/lib/api-handler'
 import { requestSchema } from '@/lib/types'
 import { logger } from '@/lib/logger'
 
-export const POST = handleJsonRoute(async (json, req: NextRequest) => {
+export async function POST(req: Request) {
   try {
+    const json = await req.json()
     const parsed = requestSchema.safeParse(json)
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Entrée invalide' }, { status: 400 })
+      return Response.json({ error: 'Entrée invalide' }, { status: 400 })
     }
     const { startDate, endDate } = parsed.data
 
     if (!isValidDateRange(startDate, endDate)) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Intervalle de dates invalide' },
         { status: 400 },
       )
@@ -30,7 +29,7 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
       parseISO(startDate),
     )
     if (rangeDays > maxRangeDays) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Intervalle de dates trop long (maximum 90 jours)' },
         { status: 400 },
       )
@@ -48,7 +47,7 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     })
 
     if (!profile) {
-      return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 })
+      return Response.json({ error: 'Profil introuvable' }, { status: 404 })
     }
 
     const prompt = buildMealPlanPrompt(
@@ -63,14 +62,14 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     const mealPlan = await generateMealPlan(prompt)
 
     if (!hasValidMealDates(mealPlan.days)) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Date de repas invalide' },
         { status: 400 },
       )
     }
 
     if (!datesWithinRange(mealPlan.days, startDate, endDate)) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Date de repas invalide' },
         { status: 400 },
       )
@@ -83,7 +82,7 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
       endDate,
     )
 
-    return NextResponse.json({
+    return Response.json({
       success: true,
       planId: plan.id,
       mealPlan,
@@ -92,11 +91,11 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     logger.error({ err: error }, 'Erreur lors de la génération du plan repas')
     if (error instanceof GenerationError) {
       const message = error.message || 'Échec de la génération du plan repas'
-      return NextResponse.json({ error: message }, { status: 500 })
+      return Response.json({ error: message }, { status: 500 })
     }
-    return NextResponse.json(
+    return Response.json(
       { error: 'Échec de la génération du plan repas' },
       { status: 500 },
     )
   }
-})
+}

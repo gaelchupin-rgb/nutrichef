@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { fetchJson, ApiError } from '@/lib/http'
 import { requestSchema } from '@/lib/types'
 import type { z } from 'zod'
 
@@ -34,18 +33,26 @@ export default function PlanPage() {
       return
     }
     try {
-      const data = await fetchJson<PlanResponse>('/api/ai/generate-plan', {
+      const res = await fetch('/api/ai/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      setResult(data)
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.status >= 500 ? 'Erreur serveur' : err.message)
-      } else {
-        setError('Erreur inconnue')
+      if (!res.ok) {
+        let message = 'Erreur inconnue'
+        try {
+          const errorData = await res.json()
+          message = res.status >= 500 ? 'Erreur serveur' : errorData.error || message
+        } catch {
+          message = res.status >= 500 ? 'Erreur serveur' : message
+        }
+        setError(message)
+        return
       }
+      const data: PlanResponse = await res.json()
+      setResult(data)
+    } catch {
+      setError('Erreur inconnue')
     }
   }
 
