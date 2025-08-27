@@ -82,7 +82,6 @@ export async function saveMealPlan(
     }>
   },
   profile: MealPlanProfile,
-  userId: string,
   startDate: string,
   endDate: string,
 ) {
@@ -93,7 +92,6 @@ export async function saveMealPlan(
   return prisma.$transaction(async (tx) => {
     const plan = await tx.plan.create({
       data: {
-        userId,
         startDate: parseISO(startDate),
         endDate: parseISO(endDate),
       },
@@ -120,9 +118,9 @@ export async function saveMealPlan(
         }
 
         const recipe = await tx.recipe.upsert({
-          where: { userId_name: { userId, name: meal.name } },
+          where: { name: meal.name },
           update: recipeData,
-          create: { userId, name: meal.name, ...recipeData },
+          create: { name: meal.name, ...recipeData },
         })
 
         await tx.menuItem.create({
