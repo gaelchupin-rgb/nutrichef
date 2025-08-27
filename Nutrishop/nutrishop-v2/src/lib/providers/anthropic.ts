@@ -11,7 +11,7 @@ import { parseMealPlanResponse, MAX_RESPONSE_LENGTH } from './utils'
 
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-3-haiku-20240307'
 
-let client: Anthropic | null = null
+let client: any | null = null
 
 function getClient() {
   if (!client) {
@@ -30,7 +30,7 @@ async function generateMealPlan(prompt: string): Promise<MealPlan> {
       messages: [{ role: 'user', content: prompt }],
     })
     const text = response.content
-      .map((part) => ('text' in part ? part.text : ''))
+      .map((part: { text?: string }) => ('text' in part ? part.text : ''))
       .join('')
     if (text.length > MAX_RESPONSE_LENGTH) {
       throw new Error('Réponse Anthropic trop volumineuse')
@@ -69,7 +69,7 @@ async function analyzeNutrition(
       messages: [{ role: 'user', content: prompt }],
     })
     const text = response.content
-      .map((part) => ('text' in part ? part.text : ''))
+      .map((part: { text?: string }) => ('text' in part ? part.text : ''))
       .join('')
     if (text.length > MAX_RESPONSE_LENGTH) {
       throw new Error('Réponse Anthropic trop volumineuse')
