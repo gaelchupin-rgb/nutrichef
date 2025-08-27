@@ -7,21 +7,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id                 String   @id @default(cuid())
-  email              String   @unique
-  username           String
-  usernameNormalized String   @unique
-  password           String
-  profile            Profile?
-  plans              Plan[]
-  recipes            Recipe[]
-}
-
 model Profile {
   id           String               @id @default(cuid())
-  user         User                 @relation(fields: [userId], references: [id])
-  userId       String   @unique
   cuisineType  String?
   appliances   ProfileAppliance[]
 }
@@ -42,7 +29,7 @@ model ProfileAppliance {
 
 model Recipe {
   id           String   @id @default(cuid())
-  name         String
+  name         String   @unique
   description  String?
   instructions String?
   prepTime     Int?
@@ -58,18 +45,12 @@ model Recipe {
   sodium       Float?
   tags         String[]
   category     String?
-  user         User     @relation(fields: [userId], references: [id])
-  userId       String
   menuItems    MenuItem[]
   ingredients  RecipeIngredient[]
-
-  @@unique([userId, name])
 }
 
 model Plan {
   id        String     @id @default(cuid())
-  user      User       @relation(fields: [userId], references: [id])
-  userId    String
   startDate DateTime
   endDate   DateTime
   menuItems MenuItem[]

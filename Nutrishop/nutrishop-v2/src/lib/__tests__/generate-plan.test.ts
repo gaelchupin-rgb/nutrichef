@@ -90,14 +90,13 @@ test('saveMealPlan avoids duplicate recipe errors', async () => {
   await utils.saveMealPlan(
     mealPlan as any,
     { cuisineType: 'classique' },
-    '1',
     '2024-01-01',
     '2024-01-02',
   )
   assert.deepEqual(upsertArgs.where, {
-    userId_name: { userId: '1', name: 'Omelette' },
+    name: 'Omelette',
   })
-  assert.equal(upsertArgs.create.userId, '1')
+  assert.equal(upsertArgs.create.name, 'Omelette')
 })
 
 test('saveMealPlan processes all meals', async () => {
@@ -122,7 +121,6 @@ test('saveMealPlan processes all meals', async () => {
   await utils.saveMealPlan(
     mealPlan as any,
     { cuisineType: 'classique' },
-    '1',
     '2024-01-01',
     '2024-01-02',
   )
@@ -163,7 +161,6 @@ test('saveMealPlan throws on out-of-range plan', async () => {
       utils.saveMealPlan(
         mealPlan as any,
         { cuisineType: 'classique' },
-        '1',
         '2024-01-02',
         '2024-01-01',
       ),
@@ -234,7 +231,7 @@ test('allows ranges up to 90 days', async () => {
     user: { id: '1', email: 'a@a.com', name: 'user' },
   }))
   ;(prisma as any).profile = {
-    findUnique: async () => ({ cuisineType: null, appliances: [] }),
+    findFirst: async () => ({ cuisineType: null, appliances: [] }),
   }
   ;(prisma as any).$transaction = async (cb: any) => {
     return cb({

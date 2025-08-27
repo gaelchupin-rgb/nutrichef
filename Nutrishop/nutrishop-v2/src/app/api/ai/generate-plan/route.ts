@@ -14,9 +14,7 @@ import { logger } from '@/lib/logger'
 export const POST = handleJsonRoute(async (json, req: NextRequest) => {
   try {
     const session = await getSession(authOptions)
-    const userId = session?.user.id
-
-    if (!session || !userId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
@@ -46,8 +44,7 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     }
 
     const prisma = getPrisma()
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
+    const profile = await prisma.profile.findFirst({
       include: {
         appliances: {
           include: {
@@ -89,7 +86,6 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
     const plan = await saveMealPlan(
       mealPlan,
       { cuisineType: profile.cuisineType ?? undefined },
-      userId,
       startDate,
       endDate,
     )
