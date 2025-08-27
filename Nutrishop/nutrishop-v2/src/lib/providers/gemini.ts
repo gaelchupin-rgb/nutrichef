@@ -1,27 +1,17 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { z } from 'zod'
-import extract from 'extract-json-from-string'
-import { jsonrepair } from 'jsonrepair'
-import { mealPlanSchema, type MealPlan } from './meal-plan'
+import { mealPlanSchema, type MealPlan } from '../meal-plan'
+import {
+  nutritionSchema,
+  type NutritionAnalysis,
+  GenerationError,
+  NutritionError,
+  LLMProvider,
+} from './types'
+import { parseMealPlanResponse, MAX_RESPONSE_LENGTH } from './utils'
 
-export class GenerationError extends Error {
-  constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options)
-    this.name = 'GenerationError'
-  }
-}
-
-export class NutritionError extends Error {
-  constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options)
-    this.name = 'NutritionError'
-  }
-}
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-pro'
 
 let model: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null
-
-export const MAX_RESPONSE_LENGTH = 100_000
-export const GEMINI_MODEL = 'gemini-pro'
 
 export function setModel(
   testModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null,
@@ -41,33 +31,7 @@ function getModel() {
 
 export { getModel }
 
-export function parseMealPlanResponse(text: string) {
-  const cleaned = text.replace(/```(?:json)?|```/gi, '').trim()
-
-  const extracted = extract(cleaned)
-  if (Array.isArray(extracted)) {
-    for (const item of extracted) {
-      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-        return item
-      }
-    }
-  }
-
-  const startObj = cleaned.indexOf('{')
-  const endObj = cleaned.lastIndexOf('}')
-  if (startObj !== -1 && endObj !== -1) {
-    try {
-      const obj = JSON.parse(jsonrepair(cleaned.slice(startObj, endObj + 1)))
-      if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
-        return obj
-      }
-    } catch {}
-  }
-
-  throw new Error('Format du plan repas invalide')
-}
-
-export async function generateMealPlan(prompt: string): Promise<MealPlan> {
+async function generateMealPlan(prompt: string): Promise<MealPlan> {
   try {
     const result = await getModel().generateContent(prompt)
     const response = await result.response
@@ -96,19 +60,7 @@ export async function generateMealPlan(prompt: string): Promise<MealPlan> {
   }
 }
 
-const nutritionSchema = z.object({
-  kcal: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fat: z.number(),
-  fiber: z.number(),
-  sugar: z.number(),
-  sodium: z.number(),
-})
-
-export type NutritionAnalysis = z.infer<typeof nutritionSchema>
-
-export async function analyzeNutrition(
+async function analyzeNutrition(
   foodDescription: string,
 ): Promise<NutritionAnalysis> {
   const prompt =
@@ -148,3 +100,10 @@ export async function analyzeNutrition(
     })
   }
 }
+
+const geminiProvider: LLMProvider = {
+  generateMealPlan,
+  analyzeNutrition,
+}
+
+export default geminiProvider

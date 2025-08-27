@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateMealPlan, GenerationError } from '@/lib/gemini'
+import { getProvider, GenerationError } from '@/lib/providers'
 import { buildMealPlanPrompt, profile } from '@/lib/prompts'
 import { isValidDateRange, hasValidMealDates } from '@/lib/date-utils'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
@@ -36,7 +36,8 @@ export const POST = handleJsonRoute(async (json, req: NextRequest) => {
 
     const prompt = buildMealPlanPrompt(profile, startDate, endDate)
 
-    const mealPlan = await generateMealPlan(prompt)
+    const provider = getProvider()
+    const mealPlan = await provider.generateMealPlan(prompt)
 
     if (!hasValidMealDates(mealPlan.days)) {
       return NextResponse.json(

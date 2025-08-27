@@ -14,8 +14,11 @@ Ce projet contient une application Next.js située dans `Nutrishop/nutrishop-v2`
    ```
 3. (Optionnel) Configurer les variables d'environnement dans un fichier `.env` :
    - `DATABASE_URL`
-   - `GOOGLE_API_KEY`
-   - `GEMINI_MODEL`
+   - `LLM_PROVIDER` (`gemini`, `openai`, `anthropic`)
+   - `GEMINI_API_KEY`
+   - `OPENAI_API_KEY`
+   - `ANTHROPIC_API_KEY`
+   - `GEMINI_MODEL`, `OPENAI_MODEL`, `ANTHROPIC_MODEL` (optionnel)
 4. Générer le client Prisma:
    ```bash
    npm run db:generate
@@ -47,8 +50,13 @@ Ce projet contient une application Next.js située dans `Nutrishop/nutrishop-v2`
 4. (Optionnel) Définir les variables d'environnement pour la session courante :
    ```powershell
    $env:DATABASE_URL="..."
-   $env:GOOGLE_API_KEY="..."
+   $env:LLM_PROVIDER="gemini"
+   $env:GEMINI_API_KEY="..."
+   $env:OPENAI_API_KEY="..."
+   $env:ANTHROPIC_API_KEY="..."
    $env:GEMINI_MODEL="..."
+   $env:OPENAI_MODEL="..."
+   $env:ANTHROPIC_MODEL="..."
    ```
 5. Générer le client Prisma :
    ```powershell
@@ -72,11 +80,11 @@ Ce projet contient une application Next.js située dans `Nutrishop/nutrishop-v2`
 ## Tests
 
 Exécuter les tests unitaires:
+
 ```bash
 npm test
 ```
 
-Le script de test définit automatiquement des valeurs fictives pour `DATABASE_URL`, `GOOGLE_API_KEY` et `GEMINI_MODEL`.
+Le script de test définit automatiquement des valeurs fictives pour `DATABASE_URL`, `GEMINI_API_KEY` et `GEMINI_MODEL`.
 
 > **Prérequis** : Node.js 20 ou supérieur est recommandé pour l'exécution des tests.
-
