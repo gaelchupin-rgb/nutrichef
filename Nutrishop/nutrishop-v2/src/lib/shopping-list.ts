@@ -1,36 +1,28 @@
-import { getPrisma } from '@/lib/db'
-
-export interface ShoppingListItemInput {
-  ingredientId: string
+export interface ShoppingListItem {
+  id: string
   name: string
   quantity: number
   unit: string | null
   category?: string | null
 }
 
-export async function generateShoppingList(planId: string) {
-  const prisma = getPrisma()
+interface ShoppingListPlan {
+  menuItems: Array<{
+    recipe: {
+      ingredients: Array<{
+        ingredientId: string
+        ingredient: { name: string; category?: string | null }
+        quantity: number
+        unit: string | null
+      }>
+    }
+  }>
+}
 
-  const plan = await prisma.plan.findUnique({
-    where: { id: planId },
-    include: {
-      menuItems: {
-        include: {
-          recipe: {
-            include: {
-              ingredients: {
-                include: { ingredient: true },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-
-  if (!plan) throw new Error('Plan not found')
-
-  const aggregated = new Map<string, ShoppingListItemInput>()
+export function generateShoppingList(
+  plan: ShoppingListPlan,
+): ShoppingListItem[] {
+  const aggregated = new Map<string, ShoppingListItem>()
 
   for (const item of plan.menuItems) {
     for (const ri of item.recipe.ingredients) {
@@ -40,7 +32,7 @@ export async function generateShoppingList(planId: string) {
         existing.quantity += ri.quantity
       } else {
         aggregated.set(key, {
-          ingredientId: ri.ingredientId,
+          id: ri.ingredientId,
           name: ri.ingredient.name,
           quantity: ri.quantity,
           unit: ri.unit,
@@ -50,36 +42,5 @@ export async function generateShoppingList(planId: string) {
     }
   }
 
-  const list = await prisma.shoppingList.upsert({
-    where: { planId },
-    update: {
-      items: {
-        deleteMany: {},
-        create: Array.from(aggregated.values()).map((i) => ({
-          ingredientId: i.ingredientId,
-          quantity: i.quantity,
-          unit: i.unit,
-        })),
-      },
-    },
-    create: {
-      planId,
-      items: {
-        create: Array.from(aggregated.values()).map((i) => ({
-          ingredientId: i.ingredientId,
-          quantity: i.quantity,
-          unit: i.unit,
-        })),
-      },
-    },
-    include: {
-      items: { include: { ingredient: true } },
-    },
-  })
-
-  return list
+  return Array.from(aggregated.values())
 }
-
-export type GeneratedShoppingList = Awaited<
-  ReturnType<typeof generateShoppingList>
->
