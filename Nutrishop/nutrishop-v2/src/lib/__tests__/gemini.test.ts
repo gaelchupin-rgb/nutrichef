@@ -10,23 +10,21 @@ test('imports without env vars', () => {
     process.execPath,
     ['-r', 'tsx', '-e', "import('./src/lib/gemini.ts')"],
     {
-      env: { ...process.env, GOOGLE_API_KEY: '', GEMINI_MODEL: '' },
+      env: { ...process.env, GEMINI_API_KEY: '' },
     },
   )
   assert.equal(result.status, 0)
 })
 
 test('parseMealPlanResponse extracts first JSON', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { parseMealPlanResponse } = await import(modulePath)
   const data = parseMealPlanResponse('foo {"days": []} bar {"other": 1}')
   assert.deepEqual(data, { days: [] })
 })
 
 test('parseMealPlanResponse handles nested JSON', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { parseMealPlanResponse } = await import(modulePath)
   const text = 'start {"a": {"b": [1, 2, {"c": 3}]}} end'
   const data = parseMealPlanResponse(text)
@@ -34,8 +32,7 @@ test('parseMealPlanResponse handles nested JSON', async () => {
 })
 
 test('parseMealPlanResponse strips code fences and extra text', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { parseMealPlanResponse } = await import(modulePath)
   const response = '```json\n{"days": []}\n``` noise'
   const data = parseMealPlanResponse(response)
@@ -43,8 +40,7 @@ test('parseMealPlanResponse strips code fences and extra text', async () => {
 })
 
 test('parseMealPlanResponse handles braces inside strings', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { parseMealPlanResponse } = await import(modulePath)
   const text = '{"a": "value with { brace", "b": 1}'
   const data = parseMealPlanResponse(text)
@@ -52,16 +48,14 @@ test('parseMealPlanResponse handles braces inside strings', async () => {
 })
 
 test('parseMealPlanResponse repairs malformed JSON', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { parseMealPlanResponse } = await import(modulePath)
   const data = parseMealPlanResponse('noise {a:1,} more')
   assert.deepEqual(data, { a: 1 })
 })
 
 test('parseMealPlanResponse rejects non-object JSON', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { parseMealPlanResponse } = await import(modulePath)
   assert.throws(
     () => parseMealPlanResponse('42'),
@@ -70,8 +64,7 @@ test('parseMealPlanResponse rejects non-object JSON', async () => {
 })
 
 test('parseMealPlanResponse rejects arrays', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { parseMealPlanResponse } = await import(modulePath)
   assert.throws(
     () => parseMealPlanResponse('[1,2,3]'),
@@ -80,8 +73,7 @@ test('parseMealPlanResponse rejects arrays', async () => {
 })
 
 test('generateMealPlan parses model response', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { generateMealPlan, setModel } = await import(modulePath)
   const mockModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> = {
     generateContent: async () =>
@@ -94,8 +86,7 @@ test('generateMealPlan parses model response', async () => {
 })
 
 test('analyzeNutrition parses model response', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { analyzeNutrition, setModel } = await import(modulePath)
   const mockModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> = {
     generateContent: async () =>
@@ -121,8 +112,7 @@ test('analyzeNutrition parses model response', async () => {
 })
 
 test('analyzeNutrition rejects incomplete data', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { analyzeNutrition, setModel } = await import(modulePath)
   const mockModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> = {
     generateContent: async () =>
@@ -139,8 +129,7 @@ test('analyzeNutrition rejects incomplete data', async () => {
 })
 
 test('generateMealPlan rejects oversized responses', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { generateMealPlan, setModel, MAX_RESPONSE_LENGTH } = await import(
     modulePath
   )
@@ -157,8 +146,7 @@ test('generateMealPlan rejects oversized responses', async () => {
 })
 
 test('analyzeNutrition rejects oversized responses', async () => {
-  process.env.GOOGLE_API_KEY = 'test'
-  process.env.GEMINI_MODEL = 'test-model'
+  process.env.GEMINI_API_KEY = 'test'
   const { analyzeNutrition, setModel, MAX_RESPONSE_LENGTH } = await import(
     modulePath
   )
