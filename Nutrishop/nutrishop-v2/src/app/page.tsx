@@ -4,9 +4,6 @@ export default function Home() {
       <h1>Nutrishop</h1>
       <ul>
         <li>
-          <a href="/register">Inscription</a>
-        </li>
-        <li>
           <a href="/plan">Plan repas</a>
         </li>
       </ul>
