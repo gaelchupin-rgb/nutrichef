@@ -54,7 +54,6 @@ model Plan {
   startDate DateTime
   endDate   DateTime
   menuItems MenuItem[]
-  shoppingList ShoppingList?
 }
 
 model MenuItem {
@@ -72,7 +71,6 @@ model Ingredient {
   name              String              @unique
   category          String?
   recipeIngredients RecipeIngredient[]
-  shoppingListItems ShoppingListItem[]
 }
 
 model RecipeIngredient {
@@ -85,19 +83,3 @@ model RecipeIngredient {
   unit         String?
 }
 
-model ShoppingList {
-  id      String             @id @default(cuid())
-  plan    Plan               @relation(fields: [planId], references: [id])
-  planId  String             @unique
-  items   ShoppingListItem[]
-}
-
-model ShoppingListItem {
-  id             String        @id @default(cuid())
-  shoppingList   ShoppingList  @relation(fields: [shoppingListId], references: [id])
-  shoppingListId String
-  ingredient     Ingredient    @relation(fields: [ingredientId], references: [id])
-  ingredientId   String
-  quantity       Float
-  unit           String?
-}

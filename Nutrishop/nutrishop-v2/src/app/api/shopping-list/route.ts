@@ -3,8 +3,29 @@ import { z } from 'zod'
 import { handleJsonRoute } from '@/lib/api-handler'
 import { generateShoppingList } from '@/lib/shopping-list'
 
+const ingredientSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: z.string().nullable().optional(),
+})
+
+const recipeIngredientSchema = z.object({
+  ingredientId: z.string(),
+  ingredient: ingredientSchema,
+  quantity: z.number(),
+  unit: z.string().nullable(),
+})
+
 const requestSchema = z.object({
-  planId: z.string(),
+  plan: z.object({
+    menuItems: z.array(
+      z.object({
+        recipe: z.object({
+          ingredients: z.array(recipeIngredientSchema),
+        }),
+      }),
+    ),
+  }),
 })
 
 export const POST = handleJsonRoute(async (json) => {
@@ -14,14 +35,7 @@ export const POST = handleJsonRoute(async (json) => {
   }
 
   try {
-    const list = await generateShoppingList(parsed.data.planId)
-    const items = list.items.map((i) => ({
-      id: i.ingredientId,
-      name: i.ingredient.name,
-      quantity: i.quantity,
-      unit: i.unit,
-      category: i.ingredient.category,
-    }))
+    const items = generateShoppingList(parsed.data.plan)
     return NextResponse.json({ items })
   } catch (err) {
     return NextResponse.json(
